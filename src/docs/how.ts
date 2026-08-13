@@ -29,7 +29,7 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: "Filter",
     paragraphs: [
-      `The tweet is text only. The draft is checked as you type, and again on the server before posting: no other tickers, no contract addresses, no wallets, no shills, no URLs, no abuse. ${TOKEN_TICKER} is the payment token. There is no chat.`,
+      `The tweet is text only. The draft is checked as you type, and again on the server before posting: no other tickers, no contract addresses, no wallets, no shills, no URLs, no bundled FUD or attacks on the coin or dev. Swearing is fine. ${TOKEN_TICKER} is the payment token. There is no chat.`,
       "One post per payment.",
     ],
   },
