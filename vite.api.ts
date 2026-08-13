@@ -53,12 +53,15 @@ async function handleRpcNode(req: IncomingMessage, res: ServerResponse): Promise
   };
   try {
     const host = req.headers.host ?? "localhost";
-    const raw = req.method === "GET" || req.method === "HEAD" ? "" : await readBody(req);
-    const request = new Request(`http://${host}/api/rpc`, {
-      method: req.method ?? "POST",
+    const method = req.method ?? "POST";
+    const init: RequestInit = {
+      method,
       headers: { "content-type": req.headers["content-type"] ?? "application/json" },
-      body: req.method === "GET" || req.method === "HEAD" ? undefined : raw,
-    });
+    };
+    if (method !== "GET" && method !== "HEAD") {
+      init.body = await readBody(req);
+    }
+    const request = new Request(`http://${host}/api/rpc`, init);
     const response = await handleRpc(request);
     res.statusCode = response.status;
     res.setHeader("content-type", response.headers.get("content-type") ?? "application/json");
