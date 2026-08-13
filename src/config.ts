@@ -25,7 +25,11 @@ export function amountTokens(): number {
 
 export function solanaRpc(): string {
   const fromEnv = import.meta.env.VITE_SOLANA_RPC?.trim();
-  return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_SOLANA_RPC;
+  if (fromEnv && fromEnv.length > 0) return fromEnv;
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/rpc`;
+  }
+  return DEFAULT_SOLANA_RPC;
 }
 
 export function shortenMint(mint: string): string {

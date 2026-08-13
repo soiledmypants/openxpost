@@ -83,7 +83,17 @@ export async function connectWallet(name?: string): Promise<string> {
     throw new Error("Wallet connected without a public key.");
   }
   emit();
+  void prefetchLatestBlockhash();
   return key.toBase58();
+}
+
+/** Warm /api/rpc after connect so Pay's getLatestBlockhash is ready. */
+function prefetchLatestBlockhash(): Promise<void> {
+  const connection = new Connection(solanaRpc(), "confirmed");
+  return connection
+    .getLatestBlockhash("confirmed")
+    .then(() => undefined)
+    .catch(() => undefined);
 }
 
 export async function disconnectWallet(): Promise<void> {

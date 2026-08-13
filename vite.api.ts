@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
+import handleRpc from "./netlify/functions/rpc";
 import { handleInvoice } from "./server/invoice-http";
 import { handlePost } from "./server/post";
 import { handleInvoicePaid } from "./server/status-http";
@@ -20,6 +21,10 @@ function readBody(req: IncomingMessage): Promise<string> {
 function attach(use: (fn: (req: IncomingMessage, res: ServerResponse, next: () => void) => void) => void): void {
   use((req, res, next) => {
     const path = req.url?.split("?")[0];
+    if (path === "/api/rpc") {
+      void handleRpcNode(req, res);
+      return;
+    }
     if (path === "/api/post" || path === "/api/invoice") {
       void handleNode(req, res, path === "/api/post" ? "post" : "invoice");
       return;
@@ -38,6 +43,36 @@ export function apiPlugin(): Plugin {
       attach(server.middlewares.use.bind(server.middlewares));
     },
   };
+}
+
+async function handleRpcNode(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const write = (status: number, body: unknown): void => {
+    res.statusCode = status;
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify(body));
+  };
+  try {
+    const host = req.headers.host ?? "localhost";
+    const method = req.method ?? "POST";
+    const init: RequestInit = {
+      method,
+      headers: { "content-type": req.headers["content-type"] ?? "application/json" },
+    };
+    if (method !== "GET" && method !== "HEAD") {
+      init.body = await readBody(req);
+    }
+    const request = new Request(`http://${host}/api/rpc`, init);
+    const response = await handleRpc(request);
+    res.statusCode = response.status;
+    res.setHeader("content-type", response.headers.get("content-type") ?? "application/json");
+    res.end(await response.text());
+  } catch (error) {
+    write(500, {
+      jsonrpc: "2.0",
+      error: { code: -32000, message: error instanceof Error ? error.message : "RPC proxy failed." },
+      id: null,
+    });
+  }
 }
 
 async function handleNode(
