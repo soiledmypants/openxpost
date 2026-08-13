@@ -1,0 +1,12 @@
+{
+  "name": "openxpost-pay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "watch": "node src/index.mjs",
+    "test": "node src/paid.test.mjs && node src/extract.test.mjs"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0"
+  }
+}
