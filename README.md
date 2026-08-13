@@ -19,6 +19,8 @@ Optional public env:
 
 The Docs tab on the site is this source, bundled at build time.
 
+Netlify builds with `npm run build` and publishes `dist` (`netlify.toml`).
+
 ```bash
 npm install
 npm run dev
