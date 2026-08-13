@@ -62,6 +62,7 @@ export type PostTweetResponse = PostTweetSuccess | PostTweetFailure;
 
 export type PostedPair = {
   invoiceId: string;
+  tweetId: string;
   tweetUrl: string;
   tweetText: string;
   txSig: string;

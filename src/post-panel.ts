@@ -4,6 +4,7 @@ import { solscanTxUrl } from "../pay/types";
 import { receivePubkey as defaultReceive, TOKEN_TICKER, tokenMint } from "./config";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
+import { renderPostedRows } from "./posts";
 import { clearPayPrefetch, payFixedPost, prefetchPayTransfer, watchPaySignature } from "./transfer";
 import { connectedPubkey, connectWallet, onWalletChange, shortenPubkey } from "./wallet";
 
@@ -20,11 +21,6 @@ type PayState = {
 
 function displayUrl(url: string): string {
   return url.replace(/^https:\/\//, "");
-}
-
-function shortenSig(sig: string): string {
-  if (sig.length <= 16) return sig;
-  return `${sig.slice(0, 8)}…${sig.slice(-8)}`;
 }
 
 export function mountPostPanel(): void {
@@ -112,6 +108,7 @@ export function mountPostPanel(): void {
     const dest = document.createElement("code");
     dest.className = "pay-address";
     dest.textContent = receive;
+    dest.title = receive;
     card.append(dest);
 
     const actions = document.createElement("div");
@@ -176,35 +173,8 @@ export function mountPostPanel(): void {
   }
 
   function renderPosts(): void {
-    if (postsCount) {
-      postsCount.textContent = posted.length === 1 ? "1 post" : `${posted.length} posts`;
-    }
     if (!postsList) return;
-    postsList.replaceChildren();
-    if (posted.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "muted";
-      empty.textContent = "No posts yet.";
-      postsList.append(empty);
-      return;
-    }
-    for (const item of posted) {
-      const row = document.createElement("article");
-      row.className = "posts-row";
-
-      const text = document.createElement("p");
-      text.className = "posts-text";
-      text.textContent = item.tweetText || item.tweetUrl;
-      row.append(text);
-
-      const links = document.createElement("div");
-      links.className = "posts-meta";
-      links.append(linkEl(item.tweetUrl, displayUrl(item.tweetUrl)));
-      const txHref = solscanTxUrl(item.txSig);
-      links.append(linkEl(txHref, shortenSig(item.txSig)));
-      row.append(links);
-      postsList.append(row);
-    }
+    renderPostedRows(postsList, postsCount, posted);
   }
 
   function linkEl(href: string, label: string): HTMLAnchorElement {
@@ -284,6 +254,7 @@ export function mountPostPanel(): void {
         state = { ...state, invoice, phase: "posted", tweetUrl: result.tweetUrl, postError: null };
         upsertPosted({
           invoiceId: invoice.invoiceId,
+          tweetId: result.tweetId,
           tweetUrl: result.tweetUrl,
           tweetText: draftText,
           txSig: paid.txSig,

@@ -12,6 +12,7 @@ import {
   DEFAULT_RECEIVE_PUBKEY,
   DEFAULT_TOKEN_MINT,
   readInvoicePaid,
+  statusUrl,
 } from "./types";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -146,7 +147,13 @@ export async function loadBoard(): Promise<PublicBoard> {
       for (const rawItem of rec.posted) {
         if (!rawItem || typeof rawItem !== "object") continue;
         const item = rawItem as Partial<PostedPair>;
-        const tweetUrl = typeof item.tweetUrl === "string" ? item.tweetUrl.trim() : "";
+        const tweetId = typeof item.tweetId === "string" ? item.tweetId.trim() : "";
+        const tweetUrl =
+          typeof item.tweetUrl === "string" && item.tweetUrl.trim()
+            ? item.tweetUrl.trim()
+            : tweetId
+              ? statusUrl(tweetId)
+              : "";
         const tweetText =
           typeof item.tweetText === "string"
             ? item.tweetText.trim()
@@ -159,6 +166,7 @@ export async function loadBoard(): Promise<PublicBoard> {
         if (!tweetUrl || !txSig || !tweetText) continue;
         posted.push({
           invoiceId,
+          tweetId,
           tweetUrl,
           tweetText,
           txSig,
