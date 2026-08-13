@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Pay 100,000 tokens to post on the OpenXPost X account. Tokens are burned. Not a For You slot."
+      content="Pay 100,000 $POST to post on the OpenXPost X account. Tokens are burned. Not a For You slot."
     />
     <title>OpenXPost</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
@@ -42,7 +42,7 @@
         <a href="#docs">Docs</a>
       </nav>
       <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
-      <a class="btn btn-primary" href="#post">Post for 100,000</a>
+      <a class="btn btn-primary" href="#post">Post for 100,000 $POST</a>
     </header>
 
     <main id="top">
@@ -51,10 +51,11 @@
         <h1>100,000.<br />One <span class="grad">post</span>.<br />On our account.</h1>
         <p class="lede">
           X open-sourced For You. This is not a For You slot. It is an open microphone on the
-          OpenXPost X account. You sign 100,000 tokens. We burn them. Then we post.
+          OpenXPost X account. You send a unique amount near 100,000 $POST. We burn them. Then we
+          post.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#post">Post for 100,000</a>
+          <a class="btn btn-primary" href="#post">Post for 100,000 $POST</a>
           <a class="btn btn-secondary" href="#how">How it works</a>
         </div>
       </section>
@@ -84,25 +85,24 @@
           <article class="card">
             <h3>Pay</h3>
             <p class="card-copy">
-              Connect Phantom or Solflare. Sign exactly 100,000 tokens to a fresh receive address.
+              Send a unique $POST amount to the receive wallet. Exact amount identifies the order.
             </p>
             <div class="mock">
               <p class="eyebrow">Amount</p>
-              <p class="mock-amount">100,000 tokens</p>
+              <p class="mock-amount">100482.722913</p>
               <p class="muted">Then burned. Not kept.</p>
-              <p class="mock-status">Wallet · Phantom / Solflare</p>
+              <p class="mock-status">Copy amount · Copy address</p>
             </div>
           </article>
           <article class="card">
             <h3>Post</h3>
             <p class="card-copy">
-              We post on our account. The status link is returned on this site — never in the
-              tweet.
+              We post on our account. This site pairs the tweet with the burn transaction.
             </p>
             <div class="mock">
-              <p class="eyebrow">Status</p>
-              <p class="mock-amount compact">x.com/OpenXPost/status/…</p>
-              <p class="mock-status">On site only. Not written into the tweet.</p>
+              <p class="eyebrow">Posted</p>
+              <p class="mock-amount compact">tweet · burn</p>
+              <p class="mock-status">Status link and burn tx, together. Not written into the tweet.</p>
             </div>
           </article>
         </div>
@@ -113,8 +113,8 @@
         <h2>One post per payment.</h2>
         <ul class="rules">
           <li>
-            <strong>No other coins</strong>
-            Do not shill tokens in the tweet. This is an open mic, not a board.
+            <strong>No other tickers</strong>
+            Do not shill other coins in the tweet. $POST is the payment token.
           </li>
           <li>
             <strong>No CAs</strong>
@@ -134,14 +134,14 @@
           </li>
           <li>
             <strong>Burn</strong>
-            The 100,000 tokens are burned after they land. One post per invoice.
+            The 100,000 $POST are burned after they land. One post per invoice.
           </li>
         </ul>
       </section>
 
       <section class="section" id="post">
         <p class="eyebrow">Post</p>
-        <h2>Write it. Connect. Pay 100,000.</h2>
+        <h2>Write it. Get the amount. Send $POST.</h2>
         <div class="panel-grid">
           <div class="panel">
             <div class="panel-head">
@@ -153,14 +153,12 @@
               id="draft"
               maxlength="280"
               rows="6"
-              placeholder="280 characters. No URLs, coins, CAs, wallets, or shills."
+              placeholder="280 characters. No URLs, other tickers, CAs, wallets, or shills."
             ></textarea>
             <div class="row-actions">
-              <button class="btn btn-secondary" id="connect-wallet" type="button">Connect wallet</button>
               <button class="btn btn-secondary" id="review" type="button">Review</button>
-              <button class="btn btn-primary" id="get-quote" type="button">Pay 100,000</button>
+              <button class="btn btn-primary" id="get-quote" type="button">Get amount</button>
             </div>
-            <p id="wallet-label" class="muted wallet-label">Not connected</p>
             <div class="agent">
               <p class="eyebrow">Agent</p>
               <div id="agent-log" aria-live="polite"></div>
@@ -198,7 +196,7 @@
         <strong>OpenXPost</strong>
         is not a For You product.
         <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
-        You pay 100,000 tokens. They are burned. The tweet link is returned on this site.
+        You pay 100,000 $POST. They are burned. The tweet link is returned on this site.
       </p>
       <div class="ca-slot">
         <span class="eyebrow">CA</span>

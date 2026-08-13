@@ -32,7 +32,10 @@ export async function handleInvoice(method: string, url: URL, body: unknown): Pr
 
   if (method === "GET") {
     const id = url.searchParams.get("id")?.trim() ?? "";
-    if (!id) return { status: 400, body: { error: "id is required." } };
+    if (!id) {
+      const { publicBoard } = await import("./invoice");
+      return { status: 200, body: await publicBoard() };
+    }
     const status = await invoiceStatus(id);
     if (!status) return { status: 404, body: { error: "Unknown invoice." } };
     return { status: 200, body: { ...status.invoice, paid: status.paid } };

@@ -1,9 +1,19 @@
 export const DEFAULT_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 
-/** Test mint ROOTS (pump). Override with VITE_TOKEN_MINT / TOKEN_MINT. */
+/** Payment mint. Override with VITE_TOKEN_MINT / TOKEN_MINT. Ticker is $POST. */
 export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump";
 
+/** Shown on the site. Payment token ticker. */
+export const TOKEN_TICKER = "$POST";
+
+/** Live test receive wallet. Override with RECEIVE_PUBKEY on the server. */
+export const DEFAULT_RECEIVE_PUBKEY = "2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ";
+
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
+
+export function solscanTxUrl(signature: string): string {
+  return `https://solscan.io/tx/${signature}`;
+}
 
 export type CreateInvoiceInput = {
   orderId: string;
@@ -17,6 +27,8 @@ export type InvoiceCreated = {
   receivePubkey: string;
   mint: string;
   amountTokens: number;
+  amountUi: string;
+  amountRaw: string;
 };
 
 /** Locked invoice.paid fields. Reader must accept aliases. */
@@ -46,6 +58,20 @@ export type PostTweetFailure = {
 };
 
 export type PostTweetResponse = PostTweetSuccess | PostTweetFailure;
+
+export type PostedPair = {
+  invoiceId: string;
+  tweetUrl: string;
+  burnSignature: string;
+  paidAt: string;
+};
+
+export type PublicBoard = {
+  receivePubkey: string;
+  mint: string;
+  amountTokens: number;
+  posted: PostedPair[];
+};
 
 export const X_STATUS_PREFIX = "https://x.com/OpenXPost/status/";
 

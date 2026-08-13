@@ -15,24 +15,56 @@ import {
   type ParsedTransactionWithMeta,
 } from "@solana/web3.js";
 import type { InvoicePaid } from "../pay/types";
+import { MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
 import { envTrim, solanaRpc } from "./env";
-import type { StoredInvoice } from "./store";
+import { getStore, type StoredInvoice } from "./store";
+
+const SIG_PAGE = 100;
+const SIG_PAGES = 5;
 
 function connection(): Connection {
   return new Connection(solanaRpc(), "confirmed");
 }
 
-function keypairFromSecret(secretKey: string): Keypair {
-  return Keypair.fromSecretKey(Buffer.from(secretKey, "base64"));
+function keypairFromSecret(raw: string): Keypair {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("[")) {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!Array.isArray(parsed)) {
+      throw new Error("invalid");
+    }
+    const bytes = Uint8Array.from(parsed.map((n) => Number(n)));
+    return Keypair.fromSecretKey(bytes);
+  }
+  const bytes = Buffer.from(trimmed, "base64");
+  return Keypair.fromSecretKey(bytes);
 }
 
-function feePayer(): Keypair | null {
+/** Owner signer for burns. Secret is never logged. */
+function receiveOwner(expectedPubkey: string): Keypair {
+  const raw = envTrim("RECEIVE_SECRET") || envTrim("FEE_PAYER_SECRET");
+  if (!raw) {
+    throw new Error("Set RECEIVE_SECRET or FEE_PAYER_SECRET on the server.");
+  }
+  let kp: Keypair;
+  try {
+    kp = keypairFromSecret(raw);
+  } catch {
+    throw new Error("Receive signer is not a valid secret.");
+  }
+  if (kp.publicKey.toBase58() !== expectedPubkey) {
+    throw new Error("Receive signer does not match the receive wallet.");
+  }
+  return kp;
+}
+
+function feePayer(owner: Keypair): Keypair {
   const raw = envTrim("FEE_PAYER_SECRET");
-  if (!raw) return null;
+  if (!raw) return owner;
   try {
     return keypairFromSecret(raw);
   } catch {
-    return null;
+    return owner;
   }
 }
 
@@ -71,6 +103,23 @@ function collectParsed(tx: ParsedTransactionWithMeta): ParsedInstruction[] {
   return [...top, ...inner];
 }
 
+function isSplTokenParsed(ix: ParsedInstruction): boolean {
+  const program = typeof ix.program === "string" ? ix.program : "";
+  if (!program) return true;
+  return program === "spl-token" || program === "spl-token-2022";
+}
+
+function parsedAmount(info: Record<string, unknown>): bigint {
+  const tokenAmount = info.tokenAmount as { amount?: string } | undefined;
+  return BigInt(String(tokenAmount?.amount ?? info.amount ?? "0"));
+}
+
+function parsedPayer(info: Record<string, unknown>): string {
+  const authority = String(info.authority ?? "").trim();
+  const multisig = String(info.multisigAuthority ?? "").trim();
+  return authority || multisig;
+}
+
 function readTransfer(
   tx: ParsedTransactionWithMeta,
   mint: string,
@@ -78,21 +127,157 @@ function readTransfer(
   rawAmount: bigint,
 ): { payer: string } | null {
   for (const ix of collectParsed(tx)) {
+    if (!isSplTokenParsed(ix)) continue;
     const parsed = ix.parsed;
     if (!parsed || typeof parsed !== "object") continue;
     const type = (parsed as { type?: string }).type;
-    if (type !== "transfer" && type !== "transferChecked") continue;
+    if (type !== "transferChecked" && type !== "transfer") continue;
     const info = (parsed as { info?: Record<string, unknown> }).info;
     if (!info) continue;
     const destination = String(info.destination ?? "");
     const mintIx = String(info.mint ?? mint);
-    const tokenAmount = info.tokenAmount as { amount?: string } | undefined;
-    const amount = BigInt(String(tokenAmount?.amount ?? info.amount ?? "0"));
-    if (destination === destAta && mintIx === mint && amount === rawAmount) {
-      return { payer: String(info.authority ?? info.source ?? "") };
+    const amount = parsedAmount(info);
+    const payer = parsedPayer(info);
+    if (destination === destAta && mintIx === mint && amount === rawAmount && payer) {
+      return { payer };
     }
   }
   return null;
+}
+
+function readBurn(
+  tx: ParsedTransactionWithMeta,
+  mint: string,
+  ata: string,
+  rawAmount: bigint,
+): boolean {
+  for (const ix of collectParsed(tx)) {
+    if (!isSplTokenParsed(ix)) continue;
+    const parsed = ix.parsed;
+    if (!parsed || typeof parsed !== "object") continue;
+    const type = (parsed as { type?: string }).type;
+    if (type !== "burn" && type !== "burnChecked") continue;
+    const info = (parsed as { info?: Record<string, unknown> }).info;
+    if (!info) continue;
+    const account = String(info.account ?? info.source ?? "");
+    const mintIx = String(info.mint ?? mint);
+    const amount = parsedAmount(info);
+    if (account === ata && mintIx === mint && amount === rawAmount) return true;
+  }
+  return false;
+}
+
+type MatchedTransfer = {
+  txSig: string;
+  payer: string;
+  slot: number;
+  blockTimeMs: number;
+};
+
+function inMatchWindow(blockTimeMs: number, createdAt: number, now: number): boolean {
+  const start = createdAt - MATCH_SKEW_MS;
+  const end = Math.min(now, createdAt + MATCH_WINDOW_MS);
+  return blockTimeMs >= start && blockTimeMs <= end;
+}
+
+async function matchingTransfers(
+  conn: Connection,
+  ata: PublicKey,
+  mint: string,
+  rawAmount: bigint,
+  createdAt: number,
+  now: number,
+): Promise<MatchedTransfer[]> {
+  const found: MatchedTransfer[] = [];
+  let before: string | undefined;
+  for (let page = 0; page < SIG_PAGES; page += 1) {
+    const sigs = await conn.getSignaturesForAddress(ata, {
+      limit: SIG_PAGE,
+      ...(before ? { before } : {}),
+    });
+    if (sigs.length === 0) break;
+    for (const info of sigs) {
+      if (info.err) continue;
+      const blockTimeMs = (info.blockTime ?? 0) * 1000;
+      if (blockTimeMs && !inMatchWindow(blockTimeMs, createdAt, now)) continue;
+      const tx = await conn.getParsedTransaction(info.signature, {
+        maxSupportedTransactionVersion: 0,
+      });
+      if (!tx) continue;
+      const hit = readTransfer(tx, mint, ata.toBase58(), rawAmount);
+      if (!hit) continue;
+      found.push({
+        txSig: info.signature,
+        payer: hit.payer,
+        slot: tx.slot,
+        blockTimeMs: blockTimeMs || (tx.blockTime ? tx.blockTime * 1000 : createdAt),
+      });
+    }
+    const last = sigs[sigs.length - 1];
+    if (!last || sigs.length < SIG_PAGE) break;
+    before = last.signature;
+  }
+  found.reverse();
+  return found;
+}
+
+async function unusedBurnSignature(
+  conn: Connection,
+  ata: PublicKey,
+  mint: string,
+  rawAmount: bigint,
+  usedBurns: Set<string>,
+): Promise<string | null> {
+  const sigs = await conn.getSignaturesForAddress(ata, { limit: SIG_PAGE });
+  for (const info of sigs) {
+    if (info.err || usedBurns.has(info.signature)) continue;
+    const tx = await conn.getParsedTransaction(info.signature, {
+      maxSupportedTransactionVersion: 0,
+    });
+    if (!tx) continue;
+    if (readBurn(tx, mint, ata.toBase58(), rawAmount)) return info.signature;
+  }
+  return null;
+}
+
+async function sendBurn(params: {
+  conn: Connection;
+  ata: PublicKey;
+  mint: PublicKey;
+  owner: PublicKey;
+  rawAmount: bigint;
+  decimals: number;
+  programId: PublicKey;
+  receivePubkey: string;
+}): Promise<string> {
+  const ownerKey = receiveOwner(params.receivePubkey);
+  const relayer = feePayer(ownerKey);
+  const burnIx = createBurnCheckedInstruction(
+    params.ata,
+    params.mint,
+    params.owner,
+    params.rawAmount,
+    params.decimals,
+    [],
+    params.programId,
+  );
+  const { blockhash, lastValidBlockHeight } = await params.conn.getLatestBlockhash("confirmed");
+  const tx = new Transaction({
+    feePayer: relayer.publicKey,
+    blockhash,
+    lastValidBlockHeight,
+  }).add(burnIx);
+  tx.sign(ownerKey);
+  if (!relayer.publicKey.equals(ownerKey.publicKey)) tx.partialSign(relayer);
+  const burnSignature = await params.conn.sendRawTransaction(tx.serialize(), {
+    skipPreflight: false,
+  });
+  await params.conn.confirmTransaction({
+    signature: burnSignature,
+    blockhash,
+    lastValidBlockHeight,
+  });
+  return burnSignature;
 }
 
 export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid | null> {
@@ -105,75 +290,88 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
   const programId = await tokenProgramOf(conn, mint);
   const ata = await getAssociatedTokenAddress(mint, owner, false, programId);
   const mintInfo = await getMint(conn, mint, "confirmed", programId);
-  const rawAmount = BigInt(invoice.amountTokens) * 10n ** BigInt(mintInfo.decimals);
+  const rawAmount =
+    parseAmountRaw(invoice.amountRaw ?? "") ??
+    BigInt(Math.round(invoice.amountTokens * 10 ** mintInfo.decimals));
 
-  let account;
-  try {
-    account = await getAccount(conn, ata, "confirmed", programId);
-  } catch {
-    return null;
-  }
-  if (account.amount < rawAmount) {
-    return null;
+  const store = await getStore();
+  const listed = await store.listInvoices();
+  const byId = new Map(listed.map((row) => [row.invoiceId, row]));
+  const current = byId.get(invoice.invoiceId);
+  const merged: StoredInvoice = current ? { ...invoice, ...current } : invoice;
+  byId.set(merged.invoiceId, merged);
+
+  const usedTx = new Set<string>();
+  const usedBurns = new Set<string>();
+  for (const row of byId.values()) {
+    if (row.txSig) usedTx.add(row.txSig);
+    if (row.burnSignature) usedBurns.add(row.burnSignature);
   }
 
-  const sigs = await conn.getSignaturesForAddress(ata, { limit: 20 });
-  let payer = "";
-  let txSig = "";
-  let slot = 0;
-  for (const info of sigs) {
-    if (info.err) continue;
-    const tx = await conn.getParsedTransaction(info.signature, {
-      maxSupportedTransactionVersion: 0,
-    });
-    if (!tx) continue;
-    const hit = readTransfer(tx, invoice.mint, ata.toBase58(), rawAmount);
-    if (hit) {
-      payer = hit.payer;
-      txSig = info.signature;
-      slot = tx.slot;
-      break;
-    }
-  }
+  let txSig = merged.txSig ?? "";
+  let payer = merged.payer ?? "";
+  let slot = merged.slot ?? 0;
+
   if (!txSig) {
-    payer = String(account.owner.toBase58());
-    const first = sigs[0];
-    if (!first) return null;
-    txSig = first.signature;
-    slot = first.slot;
+    const now = Date.now();
+    const matches = await matchingTransfers(
+      conn,
+      ata,
+      invoice.mint,
+      rawAmount,
+      merged.createdAt,
+      now,
+    );
+    const unmatched = matches.filter((row) => !usedTx.has(row.txSig));
+    const sameAmount = [...byId.values()]
+      .filter((row) => !row.txSig && (row.amountRaw ?? "") === (merged.amountRaw ?? ""))
+      .sort((a, b) => a.createdAt - b.createdAt || a.invoiceId.localeCompare(b.invoiceId));
+    const index = sameAmount.findIndex((row) => row.invoiceId === merged.invoiceId);
+    const hit = unmatched[index < 0 ? 0 : index];
+    if (!hit) return null;
+    if ([...byId.values()].some((row) => row.txSig === hit.txSig)) return null;
+    txSig = hit.txSig;
+    payer = hit.payer;
+    slot = hit.slot;
+    await store.putInvoice({ ...merged, txSig, payer, slot });
   }
 
-  const ownerKey = keypairFromSecret(invoice.secretKey);
-  const relayer = feePayer();
-  const payerKey = relayer ?? ownerKey;
-  const burnIx = createBurnCheckedInstruction(
-    ata,
-    mint,
-    owner,
-    rawAmount,
-    mintInfo.decimals,
-    [],
-    programId,
-  );
-  const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
-  const tx = new Transaction({
-    feePayer: payerKey.publicKey,
-    blockhash,
-    lastValidBlockHeight,
-  }).add(burnIx);
-  tx.sign(ownerKey);
-  if (relayer) tx.partialSign(relayer);
-  const burnSignature = await conn.sendRawTransaction(tx.serialize(), {
-    skipPreflight: false,
-  });
-  await conn.confirmTransaction({ signature: burnSignature, blockhash, lastValidBlockHeight });
+  if (merged.burnSignature) {
+    return asPaid({ ...merged, txSig, payer, slot });
+  }
 
+  let accountAmount = 0n;
+  try {
+    const account = await getAccount(conn, ata, "confirmed", programId);
+    accountAmount = account.amount;
+  } catch {
+    accountAmount = 0n;
+  }
+
+  let burnSignature: string | null = null;
+  if (accountAmount >= rawAmount) {
+    burnSignature = await sendBurn({
+      conn,
+      ata,
+      mint,
+      owner,
+      rawAmount,
+      decimals: mintInfo.decimals,
+      programId,
+      receivePubkey: invoice.receivePubkey,
+    });
+  } else {
+    burnSignature = await unusedBurnSignature(conn, ata, invoice.mint, rawAmount, usedBurns);
+  }
+  if (!burnSignature) return null;
+
+  const paidAt = new Date().toISOString();
   return {
     type: "invoice.paid",
     invoiceId: invoice.invoiceId,
     orderId: invoice.orderId,
     txSig,
-    paidAt: new Date().toISOString(),
+    paidAt,
     payer,
     amountTokens: invoice.amountTokens,
     mint: invoice.mint,

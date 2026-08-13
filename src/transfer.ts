@@ -17,7 +17,7 @@ async function tokenProgram(connection: Connection, mint: PublicKey): Promise<Pu
   return TOKEN_PROGRAM_ID;
 }
 
-/** User-signed transfer of exactly invoice.amountTokens to receivePubkey. */
+/** User-signed transfer of exactly invoice.amountRaw to receivePubkey. Unused by the unique-send pay path. */
 export async function payInvoice(invoice: InvoiceCreated): Promise<string> {
   const connection = new Connection(solanaRpc(), "confirmed");
   const payer = walletPublicKey();
@@ -25,7 +25,7 @@ export async function payInvoice(invoice: InvoiceCreated): Promise<string> {
   const dest = new PublicKey(invoice.receivePubkey);
   const programId = await tokenProgram(connection, mint);
   const mintInfo = await getMint(connection, mint, "confirmed", programId);
-  const raw = BigInt(invoice.amountTokens) * 10n ** BigInt(mintInfo.decimals);
+  const raw = BigInt(invoice.amountRaw);
   const srcAta = await getAssociatedTokenAddress(mint, payer, false, programId);
   const destAta = await getAssociatedTokenAddress(mint, dest, false, programId);
 

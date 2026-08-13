@@ -598,6 +598,64 @@ a {
   margin-top: 6px;
 }
 
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 28px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.pair-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pair-link {
+  color: var(--fg);
+  word-break: break-all;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+}
+
+.pair-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pair .btn {
+  height: 32px;
+  padding: 0 10px;
+}
+
+.posted {
+  margin-top: 28px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.posted-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px 16px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.posted time {
+  color: var(--faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
 .status-url {
   color: var(--fg);
   word-break: break-all;
@@ -867,7 +925,9 @@ a {
   .cards,
   .panel-grid,
   .rules,
-  .docs-shell {
+  .docs-shell,
+  .pair,
+  .posted-row {
     grid-template-columns: 1fr;
   }
 
