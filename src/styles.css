@@ -748,6 +748,10 @@ html.route-posts #posts {
   min-width: 0;
 }
 
+.ca-slot[hidden] {
+  display: none;
+}
+
 .ca-slot .eyebrow {
   margin: 0;
 }
