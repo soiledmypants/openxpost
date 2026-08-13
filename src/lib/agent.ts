@@ -1,3 +1,4 @@
+import { TOKEN_TICKER } from "../config";
 import { checkDraft, MAX_CHARS } from "./rules";
 
 export type ChatRole = "agent" | "you";
@@ -8,7 +9,7 @@ export type ChatMessage = {
 };
 
 export const GREETING =
-  "Draft the post. I check the rules. Get a unique ROOTS amount and send exactly that to the receive wallet. Those tokens are burned after they land. The tweet link comes back on this site, never in the tweet.";
+  `Draft the post. I check the rules. Get a unique ${TOKEN_TICKER} amount and send exactly that to the receive wallet. Those tokens are burned after they land. The tweet link comes back on this site, never in the tweet.`;
 
 export function reviewDraft(draft: string): string {
   const hits = checkDraft(draft);
@@ -19,7 +20,7 @@ export function reviewDraft(draft: string): string {
     return hits.map((hit) => hit.message).join(" ");
   }
   const remaining = MAX_CHARS - draft.trim().length;
-  return `This can go up. ${remaining} characters left. Get a unique amount, then send that exact ROOTS amount. It will be burned.`;
+  return `This can go up. ${remaining} characters left. Get a unique amount, then send that exact ${TOKEN_TICKER} amount. It will be burned.`;
 }
 
 export function answer(question: string, draft: string): string {
@@ -28,16 +29,16 @@ export function answer(question: string, draft: string): string {
     return reviewDraft(draft);
   }
   if (/(how|what).*(pay|token|amount|invoice)/.test(q) || q.includes("wallet")) {
-    return "No wallet connect. Get a unique ROOTS amount, copy it, and send exactly that to the receive wallet. Those tokens are burned after they land.";
+    return `No wallet connect. Get a unique ${TOKEN_TICKER} amount, copy it, and send exactly that to the receive wallet. Those tokens are burned after they land.`;
   }
   if (/(burn|flywheel)/.test(q)) {
-    return "After the unique ROOTS amount lands, Pay burns it. They are not kept. That is the flywheel.";
+    return `After the unique ${TOKEN_TICKER} amount lands, Pay burns it. They are not kept. That is the flywheel.`;
   }
   if (/(for you|foryou|algorithm|boost)/.test(q)) {
     return "This is not a For You slot. You are not buying distribution. You are posting on the OpenXPost X account.";
   }
   if (/(rule|allow|cannot|can't|url|ca|shill|coin)/.test(q)) {
-    return "No other coins, CAs, wallets, or shills in the tweet. No URLs in the tweet. One post per payment.";
+    return `No other tickers, CAs, wallets, or shills in the tweet. No URLs in the tweet. One post per payment. ${TOKEN_TICKER} is the payment token.`;
   }
   if (/(link|status|tweet url|where)/.test(q)) {
     return "If it posts, the status link is returned here next to the burn transaction. It is never written into the tweet.";

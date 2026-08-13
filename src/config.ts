@@ -3,7 +3,10 @@ import {
   DEFAULT_RECEIVE_PUBKEY,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
+  TOKEN_TICKER,
 } from "../pay/types";
+
+export { TOKEN_TICKER };
 
 export function tokenMint(): string {
   const fromEnv = import.meta.env.VITE_TOKEN_MINT?.trim();

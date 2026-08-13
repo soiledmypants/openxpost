@@ -9,13 +9,23 @@ const URL_RE =
   /\b(https?:\/\/|www\.|t\.co\/)[^\s]+|\b[a-z0-9-]+\.(com|io|xyz|org|net|app|ai|dev|gg|link|me)\b/i;
 const ETH_CA_RE = /\b0x[a-fA-F0-9]{40}\b/;
 const SOL_CA_RE = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/;
-const TICKER_RE = /(^|\s)\$[A-Za-z]{2,12}\b/;
+const TICKER_RE = /(^|\s)\$([A-Za-z]{2,12})\b/gi;
 const WALLET_RE =
   /\b(wallet|airdrop|seed phrase|private key|send (sol|eth|btc) to|my address)\b/i;
 const SHILL_RE =
   /\b(shill|100x|1000x|guaranteed|buy now|contract address|\bca:)\b/i;
 
 export const MAX_CHARS = 280;
+
+const PAYMENT_TICKER = "POST";
+
+function hasOtherTicker(text: string): boolean {
+  for (const match of text.matchAll(TICKER_RE)) {
+    const ticker = match[2];
+    if (ticker && ticker.toUpperCase() !== PAYMENT_TICKER) return true;
+  }
+  return false;
+}
 
 export function checkDraft(text: string): RuleHit[] {
   const hits: RuleHit[] = [];
@@ -42,8 +52,8 @@ export function checkDraft(text: string): RuleHit[] {
     hits.push({ id: "wallet", message: "No wallets." });
   }
 
-  if (TICKER_RE.test(trimmed)) {
-    hits.push({ id: "coin", message: "No other coins." });
+  if (hasOtherTicker(trimmed)) {
+    hits.push({ id: "coin", message: "No other tickers." });
   }
 
   if (SHILL_RE.test(trimmed)) {

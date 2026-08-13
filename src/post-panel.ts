@@ -1,7 +1,7 @@
 import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash, readPaid } from "../pay";
 import type { InvoiceCreated, InvoicePaid, PostedPair } from "../pay/types";
 import { solscanTxUrl } from "../pay/types";
-import { receivePubkey as defaultReceive } from "./config";
+import { receivePubkey as defaultReceive, TOKEN_TICKER } from "./config";
 import { answer, GREETING, reviewDraft, type ChatMessage, type ChatRole } from "./lib/agent";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
@@ -139,14 +139,14 @@ export function mountPostPanel(): void {
 
     const amount = document.createElement("p");
     amount.className = "quote-amount";
-    amount.textContent = amountUi ? `${amountUi} ROOTS` : "Unique amount";
+    amount.textContent = amountUi ? `${amountUi} ${TOKEN_TICKER}` : "Unique amount";
     card.append(amount);
 
     const meta = document.createElement("p");
     meta.className = "muted";
     if (!state) {
       meta.textContent =
-        "Get a unique amount. Send exactly that ROOTS amount to the receive wallet. Those tokens are burned after they land.";
+        `Get a unique amount. Send exactly that ${TOKEN_TICKER} amount to the receive wallet. Those tokens are burned after they land.`;
     } else {
       meta.textContent =
         state.phase === "posted"
@@ -155,7 +155,7 @@ export function mountPostPanel(): void {
             ? "Posting"
             : state.phase === "error"
               ? "Needs retry"
-              : `Send exactly ${state.invoice.amountUi} ROOTS`;
+              : `Send exactly ${state.invoice.amountUi} ${TOKEN_TICKER}`;
     }
     card.append(meta);
 
@@ -400,7 +400,7 @@ export function mountPostPanel(): void {
         setDraftLocked(true);
         push(
           "agent",
-          `Send exactly ${invoice.amountUi} ROOTS to the receive wallet. Copy amount and address. Those tokens are burned after they land.`,
+          `Send exactly ${invoice.amountUi} ${TOKEN_TICKER} to the receive wallet. Copy amount and address. Those tokens are burned after they land.`,
         );
       } catch (error) {
         push("agent", error instanceof Error ? error.message : "Could not create invoice.");

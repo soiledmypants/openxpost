@@ -3,6 +3,7 @@ export {
   DEFAULT_RECEIVE_PUBKEY,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
+  TOKEN_TICKER,
   readInvoicePaid,
   solscanTxUrl,
 } from "./types";
