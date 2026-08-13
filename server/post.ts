@@ -1,9 +1,16 @@
 import { statusUrl, type PostTweetResponse } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
-import { asObject, readJson, serveJson } from "./http";
 import { loadInvoice } from "./invoice";
+import { invoiceStatus } from "./invoice-status";
 import { getStore } from "./store";
 import { postTweetText } from "./x";
+
+function asObject(body: unknown): Record<string, unknown> {
+  if (body !== null && typeof body === "object" && !Array.isArray(body)) {
+    return body as Record<string, unknown>;
+  }
+  return {};
+}
 
 export async function handlePost(body: unknown): Promise<{ status: number; body: PostTweetResponse }> {
   const invoiceId = String(asObject(body).invoiceId ?? "").trim();
@@ -19,7 +26,6 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
     return { status: 200, body: { ok: true, tweetId: record.tweetId, tweetUrl: record.tweetUrl } };
   }
 
-  const { invoiceStatus } = await import("./status");
   const status = await invoiceStatus(invoiceId);
   const paid = status?.paid;
   if (!paid) {
@@ -60,13 +66,4 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
     await (await getStore()).putInvoice({ ...record, lastError: message });
     return { status: 502, body: { ok: false, error: message, retry: true } };
   }
-}
-
-export async function servePost(req: Request): Promise<Response> {
-  return serveJson(async () => {
-    if (req.method !== "POST") {
-      return { status: 405, body: { ok: false, error: "POST only." } };
-    }
-    return handlePost(await readJson(req));
-  });
 }
