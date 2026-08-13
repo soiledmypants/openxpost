@@ -51,7 +51,7 @@
         <h1>100,000.<br />One <span class="grad">post</span>.<br />On our account.</h1>
         <p class="lede">
           X open-sourced For You. This is not a For You slot. It is an open microphone on the
-          OpenXPost X account. You send a unique amount near 100,000 $POST. We burn them. Then we
+          OpenXPost X account. You connect a wallet and send 100,000 $POST. We burn them. Then we
           post.
         </p>
         <div class="hero-actions">
@@ -66,23 +66,24 @@
         <div class="cards">
           <article class="card">
             <h3>Draft</h3>
-            <p class="card-copy">Write the tweet. Rules are checked before you get an amount.</p>
+            <p class="card-copy">Write the tweet. Rules are checked before you pay.</p>
             <div class="mock">
               <p class="eyebrow">Draft</p>
               <p class="mock-amount compact">gm. shipping in public.</p>
-              <p class="muted">No URLs, other tickers, CAs, wallets, or shills.</p>
+              <p class="mock-status">280 characters. No URLs, other tickers, CAs, wallets, or shills.</p>
             </div>
           </article>
           <article class="card">
             <h3>Pay</h3>
             <p class="card-copy">
-              Send a unique $POST amount to the receive wallet. Exact amount identifies the order.
+              Connect Phantom or Solflare. Sign exactly 100,000 $POST to the treasury. The connected
+              wallet is the identity.
             </p>
             <div class="mock">
               <p class="eyebrow">Amount</p>
-              <p class="mock-amount">100482.722913</p>
+              <p class="mock-amount">100,000 $POST</p>
               <p class="muted">Then burned. Not kept.</p>
-              <p class="mock-status">Copy amount · Copy address</p>
+              <p class="mock-status">Wallet · Phantom / Solflare</p>
             </div>
           </article>
           <article class="card">
@@ -132,7 +133,7 @@
 
       <section class="section" id="post">
         <p class="eyebrow">Post</p>
-        <h2>Write it. Get the amount. Send $POST.</h2>
+        <h2>Write it. Connect. Pay 100,000 $POST.</h2>
         <div class="panel-grid">
           <div class="panel">
             <div class="panel-head">
@@ -147,8 +148,11 @@
               placeholder="280 characters. No URLs, other tickers, CAs, wallets, or shills."
             ></textarea>
             <div class="row-actions">
-              <button class="btn btn-primary" id="get-quote" type="button">Get amount</button>
+              <button class="btn btn-secondary" id="connect-wallet" type="button">Connect</button>
+              <button class="btn btn-primary" id="get-quote" type="button">Pay 100,000 $POST</button>
             </div>
+            <p id="wallet-label" class="muted wallet-label">Not connected</p>
+            <p id="review-status" class="review-status" hidden></p>
           </div>
           <div class="panel" id="quote-root"></div>
         </div>
