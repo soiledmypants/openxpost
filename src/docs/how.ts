@@ -5,7 +5,7 @@ const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `OpenXPost is an open microphone on our X account. You connect a wallet, write a draft, and pay ${PRICE} ${TOKEN_TICKER} to the treasury. We post your text. See it in Posts. All official posts from the team will be in the thread of the pinned tweet. You are not buying a For You slot.`;
+  `X open-sourced For You. This account is open too. Use ${TOKEN_TICKER} to post on this X page, including to advertise whatever you want. Freedom of speech. Open mic. Powered by Grok. See it in Posts. All official posts from the team will be in the thread of the pinned tweet.`;
 
 export type HowSection = {
   title: string;
@@ -29,7 +29,7 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: "Filter",
     paragraphs: [
-      `The tweet is text only. The draft is checked as you type, and again on the server before posting: no other tickers, no contract addresses, no wallets, no shills, no URLs, no bundled FUD or attacks on the coin or dev. Swearing is fine. ${TOKEN_TICKER} is the payment token. There is no chat.`,
+      `The tweet is text only. Advertise freely. The draft is checked as you type, and again on the server before posting: no other tickers, no contract addresses, no wallets, no shills, no URLs, no bundled FUD or attacks on the coin or dev. Swearing is fine. ${TOKEN_TICKER} is the payment token. There is no chat.`,
       "One post per payment.",
     ],
   },
@@ -41,10 +41,10 @@ export const HOW_SECTIONS: HowSection[] = [
     ],
   },
   {
-    title: "For You is the narrative, not the product",
+    title: "X open-sourced For You",
     paragraphs: [
-      "X open-sourced For You. That is the sentence this product answers. The ranking code being public does not mean anyone can inject a post into the feed.",
-      "OpenXPost does not buy distribution. It does not touch For You. You pay to speak on our account. That is the whole product.",
+      "X open-sourced For You. This account is open too.",
+      "Use $POST to post on this X page, including to advertise whatever you want. Freedom of speech. Open mic. Powered by Grok.",
     ],
   },
   {

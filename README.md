@@ -1,8 +1,8 @@
 # OpenXPost
 
-Pay 100,000 $POST to post on the OpenXPost X account. Connect Phantom or Solflare, write a draft, and transfer exactly 100,000 $POST from that wallet to the treasury. We post. See it in Posts: tweet text, tweet link, and the 100,000 $POST transfer signature.
+X open-sourced For You. This account is open too. Use $POST to post on this X page, including to advertise whatever you want. Freedom of speech. Open mic. Powered by Grok.
 
-Not a For You slot. An open microphone on our account: [@OpenXPost](https://x.com/OpenXPost).
+Connect Phantom or Solflare, write a draft, and transfer exactly 100,000 $POST from that wallet to the treasury. We post. See it in Posts: tweet text, tweet link, and the 100,000 $POST transfer signature. [@OpenXPost](https://x.com/OpenXPost).
 
 ## Pay
 

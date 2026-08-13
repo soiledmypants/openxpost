@@ -32,7 +32,7 @@ export function renderPostedRows(
   if (posted.length === 0) {
     const empty = document.createElement("p");
     empty.className = "muted";
-    empty.textContent = "No posts yet.";
+    empty.textContent = "No posts yet. Use $POST to post on this X page.";
     list.append(empty);
     return;
   }
