@@ -21,7 +21,12 @@ export async function handleInvoice(
     const orderId = typeof raw.orderId === "string" ? raw.orderId : "";
     const postText = typeof raw.postText === "string" ? raw.postText : "";
     const postTextHash = typeof raw.postTextHash === "string" ? raw.postTextHash : "";
-    const fromPubkey = typeof raw.fromPubkey === "string" ? raw.fromPubkey : "";
+    const fromPubkey =
+      typeof raw.fromPubkey === "string" && raw.fromPubkey.trim()
+        ? raw.fromPubkey
+        : typeof raw.payer === "string"
+          ? raw.payer
+          : "";
     try {
       const invoice = await createInvoice({ orderId, postText, postTextHash, fromPubkey });
       return { status: 200, body: invoice };

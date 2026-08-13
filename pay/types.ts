@@ -6,7 +6,7 @@ export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump"
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
 
-/** Live test receive wallet. Override with RECEIVE_PUBKEY on the server. */
+/** Fixed treasury. Override with RECEIVE_PUBKEY on the server. */
 export const DEFAULT_RECEIVE_PUBKEY = "2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ";
 
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
@@ -25,11 +25,12 @@ export type CreateInvoiceInput = {
 /** Locked createInvoice return. Extra keys may appear; do not rename these. */
 export type InvoiceCreated = {
   invoiceId: string;
+  orderId: string;
   receivePubkey: string;
   mint: string;
   amountTokens: number;
-  amountUi: string;
   amountRaw: string;
+  fromPubkey: string;
 };
 
 /** Locked invoice.paid fields. Reader must accept aliases. */
@@ -125,7 +126,7 @@ export function readInvoicePaid(raw: unknown): InvoicePaid | null {
   );
   const mint = asString(pick(src, ["mint", "tokenMint", "token_mint"]));
   const amountTokens = asNumber(pick(src, ["amountTokens", "amount_tokens", "amount"]));
-  const payer = asString(pick(src, ["payer", "from", "source"]));
+  const payer = asString(pick(src, ["payer", "from", "source", "fromPubkey"]));
   const paidAt = asString(pick(src, ["paidAt", "paid_at", "finalizedAt"]));
   const slot = asNumber(pick(src, ["slot"]));
 

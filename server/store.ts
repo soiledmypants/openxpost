@@ -12,6 +12,7 @@ export type StoredInvoice = {
   amountTokens: number;
   amountUi?: string;
   amountRaw?: string;
+  expectedPayer?: string;
   createdAt: number;
   txSig?: string;
   payer?: string;

@@ -1,4 +1,4 @@
-import { BASE_AMOUNT_RAW, formatAmountUi } from "../pay/amount";
+import { BASE_AMOUNT_RAW } from "../pay/amount";
 import { postTextHash } from "../pay/hash";
 import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
@@ -9,14 +9,16 @@ import { getStore, type StoredInvoice } from "./store";
 
 export function publicInvoice(record: StoredInvoice): InvoiceCreated {
   const amountRaw = record.amountRaw?.trim() || BASE_AMOUNT_RAW.toString();
-  const amountUi = record.amountUi || formatAmountUi(BASE_AMOUNT_RAW);
   return {
     invoiceId: record.invoiceId,
+    orderId: record.orderId,
     receivePubkey: record.receivePubkey,
     mint: record.mint,
-    amountTokens: record.amountTokens || baseAmountTokens(),
-    amountUi,
+    amountTokens: typeof record.amountTokens === "number" && record.amountTokens > 0
+      ? record.amountTokens
+      : baseAmountTokens(),
     amountRaw,
+    fromPubkey: record.fromPubkey ?? record.expectedPayer ?? "",
   };
 }
 
@@ -65,7 +67,6 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     receivePubkey: receivePubkey(),
     mint: tokenMint(),
     amountTokens: baseAmountTokens(),
-    amountUi: formatAmountUi(BASE_AMOUNT_RAW),
     amountRaw: BASE_AMOUNT_RAW.toString(),
     createdAt: Date.now(),
   };
