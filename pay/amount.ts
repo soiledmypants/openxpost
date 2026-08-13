@@ -41,6 +41,11 @@ export function amountTokensNumber(value: number | string | undefined, amountRaw
   return NaN;
 }
 
-export function exactAmountRaw(): bigint {
-  return BASE_AMOUNT_RAW;
+export function amountRawFromTokens(tokens: number): bigint {
+  const n = Number.isFinite(tokens) && tokens > 0 ? Math.round(tokens) : DEFAULT_AMOUNT_TOKENS;
+  return BigInt(n) * SCALE;
+}
+
+export function exactAmountRaw(tokens = DEFAULT_AMOUNT_TOKENS): bigint {
+  return amountRawFromTokens(tokens);
 }

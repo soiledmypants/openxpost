@@ -1,3 +1,4 @@
+import { amountRawFromTokens } from "../pay/amount";
 import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_RECEIVE_PUBKEY,
@@ -10,6 +11,7 @@ export function envTrim(name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/** Quiet CA slot and payment mint. Same value as VITE_TOKEN_MINT on the client. */
 export function tokenMint(): string {
   return envTrim("TOKEN_MINT") || envTrim("VITE_TOKEN_MINT") || DEFAULT_TOKEN_MINT;
 }
@@ -18,6 +20,10 @@ export function amountTokens(): number {
   const raw = envTrim("TOKEN_AMOUNT") || envTrim("VITE_TOKEN_AMOUNT");
   const n = raw ? Number(raw) : NaN;
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
+}
+
+export function amountRaw(): string {
+  return amountRawFromTokens(amountTokens()).toString();
 }
 
 function heliusRpc(): string {
@@ -31,8 +37,9 @@ export function solanaRpc(): string {
   return heliusRpc() || envTrim("SOLANA_RPC") || envTrim("VITE_SOLANA_RPC") || DEFAULT_SOLANA_RPC;
 }
 
+/** Copyable Pay address / treasury. Same value as VITE_TREASURY_ADDRESS on the client. */
 export function receivePubkey(): string {
-  return DEFAULT_RECEIVE_PUBKEY;
+  return envTrim("TREASURY_ADDRESS") || envTrim("VITE_TREASURY_ADDRESS") || DEFAULT_RECEIVE_PUBKEY;
 }
 
 export function requireXAuth(): {

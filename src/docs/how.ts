@@ -1,4 +1,5 @@
-import { DEFAULT_AMOUNT_TOKENS, DEFAULT_RECEIVE_PUBKEY, TOKEN_TICKER } from "../../pay/types";
+import { DEFAULT_AMOUNT_TOKENS, TOKEN_TICKER } from "../../pay/types";
+import { receivePubkey } from "../config";
 
 const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 
@@ -16,14 +17,14 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: "Connected wallet, exact amount",
     paragraphs: [
-      `Connect Phantom or Solflare. The bound identity is that pubkey plus your draft. Pay is exactly ${PRICE} ${TOKEN_TICKER} (raw 100000 × 10^6 at 6 decimals) to the treasury ${DEFAULT_RECEIVE_PUBKEY}. No unique suffix amounts.`,
+      `Connect Phantom or Solflare. The bound identity is that pubkey plus your draft. Pay is exactly ${PRICE} ${TOKEN_TICKER} (raw 100000 × 10^6 at 6 decimals) to the treasury ${receivePubkey()}. No unique suffix amounts.`,
       `Pay returns invoiceId, orderId, mint, amountTokens (100000), amountRaw, receivePubkey, and fromPubkey. Payment token is ${TOKEN_TICKER}. The transfer must come from the connected wallet.`,
     ],
   },
   {
     title: "Treasury",
     paragraphs: [
-      `Pay address (public key only): ${DEFAULT_RECEIVE_PUBKEY}. The 100,000 $POST stay in that treasury. That is the payment. invoice.paid includes txSig, payer, amountTokens, and mint. No per-pay burn. The server does not ask for or store a private key.`,
+      `Pay address (public key only): ${receivePubkey()}. The 100,000 $POST stay in that treasury. That is the payment. invoice.paid includes txSig, payer, amountTokens, and mint. No per-pay burn. The server does not ask for or store a private key.`,
     ],
   },
   {
