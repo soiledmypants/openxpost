@@ -126,6 +126,10 @@ a {
   color: var(--fg);
 }
 
+.nav a[aria-current="page"] {
+  color: var(--fg);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -604,19 +608,233 @@ a {
   font-weight: 500;
 }
 
+.docs-section {
+  max-width: 1240px;
+}
+
+.docs-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.docs-head h2 {
+  margin: 0;
+}
+
+.docs-shell {
+  display: grid;
+  grid-template-columns: 252px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.docs-tree,
+.docs-pane {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--fill);
+}
+
+.docs-tree {
+  position: sticky;
+  top: 72px;
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+}
+
+.docs-pane {
+  min-height: calc(100vh - 160px);
+  overflow: auto;
+}
+
+.docs-pin {
+  display: block;
+  padding: 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.docs-pin:hover,
+.docs-pin[aria-current="page"] {
+  color: var(--fg);
+}
+
+.docs-tree-list {
+  padding: 8px 0 14px;
+}
+
+.docs-dir-label {
+  margin: 10px 0 2px;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.docs-file-link {
+  display: block;
+  padding: 5px 14px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.docs-file-link:hover,
+.docs-file-link[aria-current="page"] {
+  color: var(--fg);
+}
+
+.how {
+  max-width: 40em;
+  padding: 28px;
+}
+
+.how h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.how .lede {
+  margin-top: 18px;
+  font-size: 18px;
+}
+
+.how h2 {
+  margin: 36px 0 10px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.how p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  letter-spacing: -0.015em;
+}
+
+.docs-file-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.docs-file-path {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  word-break: break-all;
+}
+
+.docs-code {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.docs-n,
+.docs-code pre {
+  margin: 0;
+  padding: 16px 0 20px;
+}
+
+.docs-n {
+  padding-left: 16px;
+  padding-right: 12px;
+  color: var(--faint);
+  text-align: right;
+  user-select: none;
+}
+
+.docs-code pre:last-child {
+  padding-right: 16px;
+  padding-left: 12px;
+}
+
+.docs-code code {
+  font-family: inherit;
+}
+
+.t-kw {
+  color: #fff;
+}
+
+.t-str {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.t-cm {
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.t-num {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.docs-missing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 28px;
+}
+
+.docs-missing p {
+  margin: 0;
+  color: var(--muted);
+}
+
 @media (max-width: 900px) {
+  .site-header {
+    flex-wrap: wrap;
+  }
+
   .nav {
-    display: none;
+    display: flex;
+    order: 3;
+    width: 100%;
+    gap: 18px;
+    padding: 2px 0 6px;
+    overflow-x: auto;
   }
 
   .cards,
   .panel-grid,
-  .rules {
+  .rules,
+  .docs-shell {
     grid-template-columns: 1fr;
   }
 
   .hero h1 {
     max-width: 12ch;
+  }
+
+  .docs-tree {
+    position: static;
+    max-height: 240px;
+  }
+
+  .docs-pane {
+    min-height: 0;
   }
 }
 
