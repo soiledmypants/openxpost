@@ -2,11 +2,9 @@ import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash, read
 import type { InvoiceCreated, InvoicePaid, PostedPair } from "../pay/types";
 import { solscanTxUrl } from "../pay/types";
 import { receivePubkey as defaultReceive, TOKEN_TICKER } from "./config";
-import { answer, GREETING, reviewDraft, type ChatMessage, type ChatRole } from "./lib/agent";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
 
-const THINK_MS = 720;
 const POLL_MS = 4000;
 
 type PayState = {
@@ -37,55 +35,38 @@ function displayUrl(url: string): string {
 export function mountPostPanel(): void {
   const draft = $("draft") as HTMLTextAreaElement;
   const count = $("count");
-  const log = $("agent-log");
-  const form = $("agent-form") as HTMLFormElement;
-  const ask = $("agent-ask") as HTMLInputElement;
   const reviewBtn = $("review") as HTMLButtonElement;
   const payBtn = $("get-quote") as HTMLButtonElement;
   const quoteRoot = $("quote-root");
+  const reviewStatus = $("review-status");
 
-  const messages: ChatMessage[] = [{ role: "agent", text: GREETING }];
-  let thinking = false;
-  let reviewTimer = 0;
   let pollTimer = 0;
   let state: PayState | null = null;
   let copied: string | null = null;
   let receive = defaultReceive();
   let posted: PostedPair[] = [];
 
-  function renderChat(): void {
-    log.replaceChildren();
-    for (const msg of messages) {
-      const row = document.createElement("div");
-      row.className = `msg msg-${msg.role}`;
-      const who = document.createElement("span");
-      who.className = "msg-who";
-      who.textContent = msg.role === "agent" ? "OpenXPost" : "You";
-      const body = document.createElement("p");
-      body.textContent = msg.text;
-      row.append(who, body);
-      log.append(row);
+  function setReviewStatus(text: string, bad = false): void {
+    reviewStatus.textContent = text;
+    reviewStatus.hidden = !text;
+    reviewStatus.classList.toggle("is-bad", Boolean(text) && bad);
+  }
+
+  function silentRulesCheck(): boolean {
+    const hits = checkDraft(draft.value);
+    if (hits.length > 0) {
+      setReviewStatus(hits.map((h) => h.message).join(" "), true);
+      return false;
     }
-    if (thinking) {
-      const row = document.createElement("div");
-      row.className = "thinking";
-      row.setAttribute("aria-live", "polite");
-      const label = document.createElement("span");
-      label.textContent = "Thinking";
-      const bar = document.createElement("span");
-      bar.className = "thinking-bar";
-      bar.append(document.createElement("span"));
-      row.append(label, bar);
-      log.append(row);
-    }
-    log.scrollTop = log.scrollHeight;
+    setReviewStatus("");
+    return true;
   }
 
   function setDraftLocked(locked: boolean): void {
     draft.readOnly = locked;
     draft.classList.toggle("is-locked", locked);
-    reviewBtn.disabled = locked || thinking;
-    payBtn.disabled = locked || thinking || !isDraftClean(draft.value);
+    reviewBtn.disabled = locked;
+    payBtn.disabled = locked || !isDraftClean(draft.value);
   }
 
   function updateCount(): void {
@@ -93,27 +74,8 @@ export function mountPostPanel(): void {
     count.textContent = `${n} / ${MAX_CHARS}`;
     count.classList.toggle("is-hot", n > MAX_CHARS - 20);
     if (!state) {
-      payBtn.disabled = thinking || !isDraftClean(draft.value);
+      payBtn.disabled = !isDraftClean(draft.value);
     }
-  }
-
-  async function withThink<T>(work: () => T | Promise<T>): Promise<T> {
-    thinking = true;
-    setDraftLocked(Boolean(state));
-    renderChat();
-    await new Promise((r) => window.setTimeout(r, THINK_MS));
-    try {
-      return await work();
-    } finally {
-      thinking = false;
-      setDraftLocked(Boolean(state));
-      renderChat();
-    }
-  }
-
-  function push(role: ChatRole, text: string): void {
-    messages.push({ role, text });
-    renderChat();
   }
 
   function stopPoll(): void {
@@ -139,7 +101,7 @@ export function mountPostPanel(): void {
 
     const amount = document.createElement("p");
     amount.className = "quote-amount";
-    amount.textContent = amountUi ? `${amountUi} ${TOKEN_TICKER}` : "Unique amount";
+    amount.textContent = amountUi ?? "Unique amount";
     card.append(amount);
 
     const meta = document.createElement("p");
@@ -334,11 +296,9 @@ export function mountPostPanel(): void {
           paidAt: state.paid.paidAt,
         });
       }
-      push("agent", "Posted. Tweet and burn are paired on this page — not in the tweet.");
       await refreshBoard();
     } else {
       state = { ...state, phase: "error", postError: result.error };
-      push("agent", result.error);
     }
     renderQuote();
   }
@@ -352,7 +312,6 @@ export function mountPostPanel(): void {
         if (!paid || !state) return;
         stopPoll();
         state = { ...state, paid, phase: "posting" };
-        push("agent", "Payment landed and burned. Posting on X.");
         renderQuote();
         await tweet();
       })();
@@ -373,42 +332,29 @@ export function mountPostPanel(): void {
 
   async function startPay(): Promise<void> {
     if (state) return;
-    const hits = checkDraft(draft.value);
-    if (hits.length > 0) {
-      await withThink(() => push("agent", hits.map((h) => h.message).join(" ")));
-      return;
-    }
-    await withThink(async () => {
-      try {
-        const postText = draft.value.trim();
-        const orderId = newOrderId();
-        const invoice = await createInvoice({
-          orderId,
-          postText,
-          postTextHash: await postTextHash(postText),
-        });
-        receive = invoice.receivePubkey || receive;
-        state = {
-          draft: postText,
-          orderId,
-          invoice,
-          paid: null,
-          tweetUrl: null,
-          postError: null,
-          phase: "waiting",
-        };
-        setDraftLocked(true);
-        push(
-          "agent",
-          `Send exactly ${invoice.amountUi} ${TOKEN_TICKER} to the receive wallet. Copy amount and address. Those tokens are burned after they land.`,
-        );
-      } catch (error) {
-        push("agent", error instanceof Error ? error.message : "Could not create invoice.");
-      }
+    if (!silentRulesCheck()) return;
+    const postText = draft.value.trim();
+    const orderId = newOrderId();
+    const invoice = await createInvoice({
+      orderId,
+      postText,
+      postTextHash: await postTextHash(postText),
     });
+    receive = invoice.receivePubkey || receive;
+    state = {
+      draft: postText,
+      orderId,
+      invoice,
+      paid: null,
+      tweetUrl: null,
+      postError: null,
+      phase: "waiting",
+    };
+    setDraftLocked(true);
+    setReviewStatus("");
     renderQuote();
     updateCount();
-    if (state) startPoll();
+    startPoll();
   }
 
   payBtn.textContent = "Get amount";
@@ -417,37 +363,23 @@ export function mountPostPanel(): void {
   });
 
   reviewBtn.addEventListener("click", () => {
-    void withThink(() => {
-      push("you", "Review this.");
-      push("agent", reviewDraft(draft.value));
-    });
+    if (silentRulesCheck()) {
+      const remaining = MAX_CHARS - draft.value.trim().length;
+      setReviewStatus(`Ready. ${remaining} characters left.`);
+    }
   });
 
   draft.addEventListener("input", () => {
     updateCount();
-    window.clearTimeout(reviewTimer);
     if (state) return;
-    reviewTimer = window.setTimeout(() => {
-      const hits = checkDraft(draft.value);
-      if (draft.value.trim() && hits.length > 0) {
-        push("agent", hits.map((h) => h.message).join(" "));
-      }
-    }, 900);
-  });
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const q = ask.value.trim();
-    if (!q || thinking) return;
-    ask.value = "";
-    push("you", q);
-    void withThink(() => {
-      push("agent", answer(q, draft.value));
-    });
+    if (!draft.value.trim()) {
+      setReviewStatus("");
+      return;
+    }
+    silentRulesCheck();
   });
 
   updateCount();
-  renderChat();
   renderQuote();
   setDraftLocked(false);
   void refreshBoard();

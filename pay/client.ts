@@ -6,7 +6,7 @@ import type {
   PostTweetResponse,
   PublicBoard,
 } from "./types";
-import { isAmountUi, parseAmountRaw } from "./amount";
+import { allocateAmountRaw, isAmountUi, parseAmountRaw } from "./amount";
 import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_RECEIVE_PUBKEY,
@@ -19,23 +19,14 @@ async function parseJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** Calls Pay. Returns the locked createInvoice shape. Extra keys are ignored. */
-export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceCreated> {
-  const body = await parseJson<{
-    invoiceId?: string;
-    receivePubkey?: string;
-    mint?: string;
-    amountTokens?: number;
-    amountUi?: string;
-    amountRaw?: string | number;
-    error?: string;
-  }>("/api/invoice", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const amountUi = typeof body.amountUi === "string" ? body.amountUi.trim() : "";
-  const amountRawRaw = body.amountRaw;
+function readCreatedInvoice(body: unknown): InvoiceCreated | null {
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return null;
+  const raw = body as Record<string, unknown>;
+  const invoiceId = typeof raw.invoiceId === "string" ? raw.invoiceId.trim() : "";
+  const receivePubkey = typeof raw.receivePubkey === "string" ? raw.receivePubkey.trim() : "";
+  const mint = typeof raw.mint === "string" ? raw.mint.trim() : "";
+  const amountUi = typeof raw.amountUi === "string" ? raw.amountUi.trim() : "";
+  const amountRawRaw = raw.amountRaw;
   const amountRaw =
     typeof amountRawRaw === "string"
       ? amountRawRaw.trim()
@@ -43,28 +34,68 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
         ? String(Math.trunc(amountRawRaw))
         : "";
   if (
-    !body.invoiceId ||
-    !body.receivePubkey ||
-    !body.mint ||
+    !invoiceId ||
+    !receivePubkey ||
+    !mint ||
     !isAmountUi(amountUi) ||
     !parseAmountRaw(amountRaw)
   ) {
-    throw new Error(body.error ?? "Pay did not return an invoice.");
+    return null;
   }
-  const amountTokens = Number(body.amountTokens);
+  const amountTokens = Number(raw.amountTokens);
   return {
-    invoiceId: body.invoiceId,
-    receivePubkey: body.receivePubkey,
-    mint: body.mint,
+    invoiceId,
+    receivePubkey,
+    mint,
     amountTokens: Number.isFinite(amountTokens) ? amountTokens : Number(amountUi),
     amountUi,
     amountRaw,
   };
 }
 
+function localInvoice(): InvoiceCreated {
+  const allocated = allocateAmountRaw(new Set());
+  return {
+    invoiceId: crypto.randomUUID(),
+    receivePubkey: DEFAULT_RECEIVE_PUBKEY,
+    mint: DEFAULT_TOKEN_MINT,
+    amountTokens: allocated.amountTokens,
+    amountUi: allocated.amountUi,
+    amountRaw: allocated.amountRaw.toString(),
+  };
+}
+
+/** POST /api/invoice first. On error, 404, or a bad body, generate a local unique amount. Never throws. */
+export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceCreated> {
+  try {
+    const response = await fetch("/api/invoice", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (response.ok) {
+      let body: unknown = null;
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+      const invoice = readCreatedInvoice(body);
+      if (invoice) return invoice;
+    }
+  } catch {
+    // Static hosts and missing functions must still quote.
+  }
+  return localInvoice();
+}
+
 export async function readPaid(invoiceId: string): Promise<InvoicePaid | null> {
-  const body = await parseJson<unknown>(`/api/invoice?id=${encodeURIComponent(invoiceId)}`);
-  return readInvoicePaid(body);
+  try {
+    const body = await parseJson<unknown>(`/api/invoice?id=${encodeURIComponent(invoiceId)}`);
+    return readInvoicePaid(body);
+  } catch {
+    return null;
+  }
 }
 
 export async function loadBoard(): Promise<PublicBoard> {

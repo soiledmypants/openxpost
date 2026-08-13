@@ -67,8 +67,13 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     throw new Error("orderId is required.");
   }
 
-  const store = await getStore();
-  const allocated = allocateAmountRaw(reservedAmountRaws(await store.listInvoices(), Date.now()));
+  let reserved = new Set<string>();
+  try {
+    reserved = reservedAmountRaws(await (await getStore()).listInvoices(), Date.now());
+  } catch {
+    reserved = new Set();
+  }
+  const allocated = allocateAmountRaw(reserved);
 
   const record: StoredInvoice = {
     invoiceId: crypto.randomUUID(),
@@ -82,7 +87,11 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     amountRaw: allocated.amountRaw.toString(),
     createdAt: Date.now(),
   };
-  await store.putInvoice(record);
+  try {
+    await (await getStore()).putInvoice(record);
+  } catch {
+    // Quote even if blob/file store is unavailable.
+  }
   return publicInvoice(record);
 }
 
@@ -91,7 +100,12 @@ export async function loadInvoice(invoiceId: string): Promise<StoredInvoice | nu
 }
 
 export async function publicBoard(): Promise<PublicBoard> {
-  const invoices = await (await getStore()).listInvoices();
+  let invoices: StoredInvoice[] = [];
+  try {
+    invoices = await (await getStore()).listInvoices();
+  } catch {
+    invoices = [];
+  }
   const posted = invoices
     .filter((row) => Boolean(row.tweetUrl && row.burnSignature && row.paidAt))
     .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "") || b.createdAt - a.createdAt)
