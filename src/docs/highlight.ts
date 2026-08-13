@@ -11,7 +11,7 @@ function langOf(path: string): string {
   if (name === ".gitignore") return "text";
   const dot = name.lastIndexOf(".");
   const ext = dot >= 0 ? name.slice(dot + 1) : "";
-  if (ext === "ts" || ext === "js") return "ts";
+  if (ext === "ts" || ext === "tsx" || ext === "js" || ext === "jsx") return "ts";
   if (ext === "css") return "css";
   if (ext === "html" || ext === "svg") return "html";
   if (ext === "json") return "json";

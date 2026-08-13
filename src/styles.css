@@ -81,22 +81,38 @@ a {
   flex: 0 0 auto;
 }
 
-.site-header {
+.site-top {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.site-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 12px var(--space);
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid transparent;
 }
 
-.site-header.is-stuck {
-  border-bottom-color: var(--line);
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.handle {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+}
+
+.handle:hover {
+  color: var(--fg);
 }
 
 .wordmark {
@@ -107,6 +123,53 @@ a {
   font-size: 15px;
   font-weight: 500;
   letter-spacing: -0.03em;
+}
+
+.ca-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px var(--space);
+  border-bottom: 1px solid transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.site-top.is-stuck .ca-bar {
+  border-bottom-color: var(--line);
+}
+
+.ca-k {
+  color: var(--faint);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ca-mint {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: -0.02em;
+  color: var(--muted);
+}
+
+.ca-copy {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ca-copy:hover {
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .nav {
@@ -236,6 +299,15 @@ a {
   font-size: clamp(17px, 2vw, 20px);
   line-height: 1.45;
   letter-spacing: -0.015em;
+}
+
+.lede a {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.lede a:hover {
+  text-decoration: underline;
 }
 
 .hero-actions {
@@ -587,6 +659,107 @@ a {
   margin-top: 6px;
 }
 
+.pay-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pay-steps .is-done {
+  color: var(--muted);
+}
+
+.pay-steps .is-current {
+  color: var(--fg);
+}
+
+.wallet-bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.wallet-pk {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--muted);
+}
+
+.wallet-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #000;
+}
+
+.wallet-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wallet-item:hover {
+  background: var(--fill-2);
+}
+
+.wallet-item img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.wallet-note {
+  margin: 8px 6px 4px;
+  color: var(--faint);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.wallet-note a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.wallet-note a:hover {
+  color: var(--fg);
+}
+
+.status-box a {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.status-box a:hover {
+  text-decoration: underline;
+}
+
 .status-box {
   margin-top: 8px;
   padding-top: 14px;
@@ -606,6 +779,15 @@ a {
 .site-footer strong {
   color: var(--fg);
   font-weight: 500;
+}
+
+.site-footer a {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
 }
 
 .docs-section {
@@ -640,7 +822,7 @@ a {
 
 .docs-tree {
   position: sticky;
-  top: 72px;
+  top: 108px;
   max-height: calc(100vh - 160px);
   overflow: auto;
 }
