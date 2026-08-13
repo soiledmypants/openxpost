@@ -1,11 +1,11 @@
-import { DEFAULT_AMOUNT_TOKENS } from "../../pay/types";
+import { DEFAULT_AMOUNT_TOKENS, TOKEN_TICKER } from "../../pay/types";
 
 const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `OpenXPost is an open microphone on our X account. You pay ${PRICE} tokens. Those tokens are burned. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
+  `OpenXPost is an open microphone on our X account. You pay a unique ${TOKEN_TICKER} amount near ${PRICE}. We match that exact amount, burn the tokens, then post on @OpenXPost. The tweet link comes back on this site. You are not buying a For You slot.`;
 
 export type HowSection = {
   title: string;
@@ -14,16 +14,16 @@ export type HowSection = {
 
 export const HOW_SECTIONS: HowSection[] = [
   {
-    title: `${PRICE} tokens, wallet connect`,
+    title: `Unique ${TOKEN_TICKER} amount, one treasury`,
     paragraphs: [
-      `The price is ${PRICE} tokens, not $1 of SOL. Connect Phantom, Solflare, or another standard Solana wallet. You sign a transfer of exactly ${PRICE} tokens to a fresh receive address for that order.`,
-      `Mint and amount are configurable. The test mint is ROOTS. Pay returns invoiceId, receivePubkey, mint, and amountTokens: ${DEFAULT_AMOUNT_TOKENS}.`,
+      `The price is about ${PRICE} ${TOKEN_TICKER} plus a unique 6-decimal suffix (for example 100482.722913). Copy the full string — do not round. Send exactly that amount to the treasury. No wallet connect on this site.`,
+      `Pay returns invoiceId, receivePubkey (the treasury), mint, amountUi, and amountRaw. Payment token is ${TOKEN_TICKER}. Exact transfer of amountRaw into the treasury ATA identifies the order.`,
     ],
   },
   {
     title: "Burn",
     paragraphs: [
-      `After those ${PRICE} tokens land, they are burned. They are not kept. invoice.paid includes amountTokens, mint, and burnSignature.`,
+      `After that unique ${TOKEN_TICKER} amount lands, it is burned. It is not kept. invoice.paid includes amountTokens, mint, and burnSignature.`,
     ],
   },
   {

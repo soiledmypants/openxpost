@@ -9,14 +9,7 @@ export default defineConfig({
     global: "globalThis",
   },
   optimizeDeps: {
-    include: [
-      "@solana/web3.js",
-      "@solana/spl-token",
-      "@solana/wallet-adapter-base",
-      "@solana/wallet-adapter-phantom",
-      "@solana/wallet-adapter-solflare",
-      "buffer",
-    ],
+    include: ["@solana/web3.js", "@solana/spl-token", "buffer"],
   },
   build: {
     target: "es2022",

@@ -1,14 +1,16 @@
 # OpenXPost
 
-Pay 100,000 tokens to post on the OpenXPost X account. Those tokens are burned. The tweet link is returned on this site — never in the tweet.
+Pay a unique $POST amount (about 100,000) to post on the OpenXPost X account. Those tokens are burned. The tweet link is returned on this site — never in the tweet.
 
 Not a For You slot. An open microphone on our account: [@OpenXPost](https://x.com/OpenXPost).
 
 ## Pay
 
-`createInvoice({ orderId, postText, postTextHash })` returns `{ invoiceId, receivePubkey, mint, amountTokens: 100000 }`. Connect a Solana wallet and sign that transfer. After the tokens land, they are burned. `invoice.paid` includes `amountTokens`, `mint`, `burnSignature`.
+`createInvoice({ orderId, postText, postTextHash })` returns `{ invoiceId, receivePubkey, mint, amountTokens, amountUi, amountRaw }`. `receivePubkey` is the treasury (`VITE_TREASURY_ADDRESS`). `amountUi` is always 6 decimal places (for example `100000.722913`). Copy that full string — do not round. Send exactly that $POST amount. We match the exact raw amount on the treasury ATA, burn the tokens, then post on @OpenXPost.
 
-Default test mint ROOTS: `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` (`VITE_TOKEN_MINT`). Amount: `VITE_TOKEN_AMOUNT` (default 100000).
+No wallet connect. The browser does not hold secrets.
+
+Payment token is $POST. Default mint: `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` (`VITE_TOKEN_MINT`, Token-2022, 6 decimals). Base amount: `VITE_TOKEN_AMOUNT` (default 100000) plus a unique suffix `1..999999` at 6 decimal places. Burn signing uses server-only `TREASURY_SECRET` or `FEE_PAYER_SECRET`. Do not commit secrets.
 
 ## Site
 

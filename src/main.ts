@@ -1,4 +1,3 @@
-import "./polyfill";
 import { tokenMint } from "./config";
 import { mountDocs } from "./docs/mount";
 import { copyText } from "./lib/dom";

@@ -1,9 +1,21 @@
 export const DEFAULT_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 
-/** Test mint ROOTS (pump). Override with VITE_TOKEN_MINT / TOKEN_MINT. */
+/** Payment mint. Override with VITE_TOKEN_MINT / TOKEN_MINT. Ticker is $POST. */
 export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump";
 
+/** Shown on the site. Payment token ticker. */
+export const TOKEN_TICKER = "$POST";
+
+/** Public placeholder when VITE_TREASURY_ADDRESS is unset. Do not invent a wallet. */
+export const TREASURY_NOT_SET = "TREASURY_NOT_SET";
+
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
+
+export function isTreasuryConfigured(treasury: string): boolean {
+  const value = treasury.trim();
+  if (!value || value === TREASURY_NOT_SET) return false;
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
+}
 
 export type CreateInvoiceInput = {
   orderId: string;
@@ -17,6 +29,8 @@ export type InvoiceCreated = {
   receivePubkey: string;
   mint: string;
   amountTokens: number;
+  amountUi: string;
+  amountRaw: string;
 };
 
 /** Locked invoice.paid fields. Reader must accept aliases. */
@@ -46,6 +60,13 @@ export type PostTweetFailure = {
 };
 
 export type PostTweetResponse = PostTweetSuccess | PostTweetFailure;
+
+export type PaymentHit = {
+  signature: string;
+  slot: number;
+  payer: string;
+  amountRaw: bigint;
+};
 
 export const X_STATUS_PREFIX = "https://x.com/OpenXPost/status/";
 

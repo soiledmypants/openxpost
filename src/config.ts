@@ -2,7 +2,12 @@ import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
+  isTreasuryConfigured,
+  TOKEN_TICKER,
+  TREASURY_NOT_SET,
 } from "../pay/types";
+
+export { TOKEN_TICKER, TREASURY_NOT_SET };
 
 export function tokenMint(): string {
   const fromEnv = import.meta.env.VITE_TOKEN_MINT?.trim();
@@ -12,7 +17,12 @@ export function tokenMint(): string {
 export function amountTokens(): number {
   const raw = import.meta.env.VITE_TOKEN_AMOUNT?.trim();
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
+}
+
+export function treasuryAddress(): string {
+  const fromEnv = import.meta.env.VITE_TREASURY_ADDRESS?.trim() ?? "";
+  return isTreasuryConfigured(fromEnv) ? fromEnv : TREASURY_NOT_SET;
 }
 
 export function solanaRpc(): string {

@@ -2,6 +2,8 @@ import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
+  isTreasuryConfigured,
+  TREASURY_NOT_SET,
 } from "../pay/types";
 
 export function envTrim(name: string): string {
@@ -16,11 +18,25 @@ export function tokenMint(): string {
 export function amountTokens(): number {
   const raw = envTrim("TOKEN_AMOUNT") || envTrim("VITE_TOKEN_AMOUNT");
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
 }
 
 export function solanaRpc(): string {
   return envTrim("SOLANA_RPC") || envTrim("VITE_SOLANA_RPC") || DEFAULT_SOLANA_RPC;
+}
+
+export function treasuryAddress(): string {
+  const fromEnv =
+    envTrim("TREASURY_ADDRESS") || envTrim("VITE_TREASURY_ADDRESS") || envTrim("RECEIVE_PUBKEY");
+  return isTreasuryConfigured(fromEnv) ? fromEnv : TREASURY_NOT_SET;
+}
+
+export function requireTreasury(): string {
+  const address = treasuryAddress();
+  if (!isTreasuryConfigured(address)) {
+    throw new Error("Set VITE_TREASURY_ADDRESS (or TREASURY_ADDRESS) on the server.");
+  }
+  return address;
 }
 
 export function requireXAuth(): {
