@@ -14,9 +14,32 @@ const WALLET_RE =
   /\b(wallet|airdrop|seed phrase|private key|send (sol|eth|btc) to|my address)\b/i;
 const SHILL_RE =
   /\b(shill|100x|1000x|guaranteed|buy now|contract address|\bca:)\b/i;
-/** Whole-word / clear phrases only. Does not match the word "gay" alone. */
-const ABUSE_RE =
-  /\b(?:rugpulls?|rugged|rug\s+pulls?|rugs?|honeypots?|faggots?|retarded|retards?|niggers?|niggas?|trann(?:y|ies)|(?:(?:the|this|that)\s+)?dev(?:eloper)?s?(?:['\u2019]s|\s+is|\s+are)\s+gay)\b/i;
+
+/** Whole-word bundled / bundler FUD. Does not match "bundle" alone. */
+const BUNDLED_RE = /\bbundl(?:ed|ers?)\b/i;
+
+/**
+ * Coin FUD: rugs / honeypots, plus "coin is ass" / "this coin is ass" / "coin ass".
+ * Bare "ass", "that's ass", and other swearing do not match.
+ */
+const COIN_ATTACK_RE =
+  /\b(?:rugpulls?|rugged|rug\s+pulls?|rugs?|honeypots?|(?:(?:the|this|that)\s+)?coins?(?:['\u2019]s)?\s+(?:(?:is|are)\s+(?:(?:so|pretty|really|complete(?:ly)?|total(?:ly)?|absolute(?:ly)?)\s+)*)?ass)\b/i;
+
+const DEV_INSULT =
+  String.raw`(?:retarded|retards?|idiots?|idiotic|stupid|dumb(?:ass)?|morons?|gay|trash|garbage|ass|clowns?|faggots?|sucks?|shitty?)`;
+
+/**
+ * Insults aimed at the dev. "this is retarded", "that's ass", and other rude posts pass.
+ */
+const DEV_ATTACK_RE = new RegExp(
+  [
+    String.raw`\b(?:fuck|fucking|hate|screw)\s+(?:(?:the|this|that)\s+)?dev(?:eloper)?s?\b`,
+    String.raw`\b(?:(?:the|this|that)\s+)?(?:${DEV_INSULT})\s+dev(?:eloper)?s?\b`,
+    String.raw`\b(?:(?:the|this|that)\s+)?dev(?:eloper)?s?(?:['\u2019]s|\s+is|\s+are)(?:\s+an?)?(?:\s+(?:fucking|goddamn|absolute|total|complete|real))?\s+${DEV_INSULT}\b`,
+    String.raw`\b(?:(?:the|this|that)\s+)?dev(?:eloper)?s?\s+${DEV_INSULT}\b`,
+  ].join("|"),
+  "i",
+);
 
 export const MAX_CHARS = 280;
 
@@ -63,8 +86,16 @@ export function checkDraft(text: string): RuleHit[] {
     hits.push({ id: "shill", message: "No shills." });
   }
 
-  if (ABUSE_RE.test(trimmed)) {
-    hits.push({ id: "abuse", message: "No abuse." });
+  if (BUNDLED_RE.test(trimmed)) {
+    hits.push({ id: "abuse", message: "No bundled FUD." });
+  }
+
+  if (COIN_ATTACK_RE.test(trimmed)) {
+    hits.push({ id: "abuse", message: "No attacks on the coin." });
+  }
+
+  if (DEV_ATTACK_RE.test(trimmed)) {
+    hits.push({ id: "abuse", message: "No attacks on the dev." });
   }
 
   return hits;
