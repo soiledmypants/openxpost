@@ -348,19 +348,21 @@ export function mountPostPanel(): void {
     invoiceWork = postTextHash(postText).then((hash) =>
       createInvoice({ orderId, postText, postTextHash: hash, fromPubkey: fromPubkey as string }),
     );
-    invoiceWork
-      .then((invoice) => {
-        if (state && state.orderId === orderId) {
-          state = { ...state, invoice };
-        }
-      })
-      .catch(() => undefined);
+    let invoice: InvoiceCreated;
+    try {
+      invoice = await invoiceWork;
+    } catch (error) {
+      invoiceWork = null;
+      setReviewStatus(error instanceof Error ? error.message : "Could not create invoice.", true);
+      updateButtons();
+      return;
+    }
 
     state = {
       draft: postText,
       fromPubkey,
       orderId,
-      invoice: null,
+      invoice,
       paid: null,
       tweetUrl: null,
       postError: null,

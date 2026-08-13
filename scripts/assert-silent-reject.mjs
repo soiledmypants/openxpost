@@ -1,14 +1,12 @@
 /**
- * Regression checks for checkDraft. Not bundled into the Docs tab (.mjs).
- * Empty text and the 280-character limit only. URLs, CAs, tickers, slurs,
- * ads, and other content must pass.
+ * Server-only silent reject. Not bundled into the Docs tab (.mjs).
  */
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const runner = join(root, "scripts", "assert-draft-rules.runner.mts");
+const runner = join(root, "scripts", "assert-silent-reject.runner.mts");
 
 const result = spawnSync(
   process.execPath,
