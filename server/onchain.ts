@@ -15,7 +15,7 @@ import {
   type ParsedTransactionWithMeta,
 } from "@solana/web3.js";
 import type { InvoicePaid } from "../pay/types";
-import { MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
+import { amountTokensNumber, MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
 import { envTrim, solanaRpc } from "./env";
 import { getStore, type StoredInvoice } from "./store";
 
@@ -79,7 +79,7 @@ function asPaid(invoice: StoredInvoice): InvoicePaid | null {
     txSig: invoice.txSig,
     paidAt: invoice.paidAt,
     payer: invoice.payer,
-    amountTokens: invoice.amountTokens,
+    amountTokens: amountTokensNumber(invoice.amountTokens, invoice.amountRaw),
     mint: invoice.mint,
     burnSignature: invoice.burnSignature,
     slot: invoice.slot ?? 0,
@@ -292,7 +292,7 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
   const mintInfo = await getMint(conn, mint, "confirmed", programId);
   const rawAmount =
     parseAmountRaw(invoice.amountRaw ?? "") ??
-    BigInt(Math.round(invoice.amountTokens * 10 ** mintInfo.decimals));
+    BigInt(Math.round(amountTokensNumber(invoice.amountTokens, invoice.amountRaw) * 10 ** mintInfo.decimals));
 
   const store = await getStore();
   const listed = await store.listInvoices();
@@ -373,7 +373,7 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
     txSig,
     paidAt,
     payer,
-    amountTokens: invoice.amountTokens,
+    amountTokens: amountTokensNumber(invoice.amountTokens, invoice.amountRaw),
     mint: invoice.mint,
     burnSignature,
     slot,

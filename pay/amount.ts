@@ -39,6 +39,18 @@ export function amountTokensFromRaw(amountRaw: bigint): number {
   return Number(formatAmountUi(amountRaw));
 }
 
+/** Coerce stored invoice amounts (number or 6-dp string) to a finite number. */
+export function amountTokensNumber(value: number | string | undefined, amountRaw?: string): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  const raw = amountRaw ? parseAmountRaw(amountRaw) : null;
+  if (raw != null) return amountTokensFromRaw(raw);
+  return NaN;
+}
+
 export function randomSuffix(): bigint {
   const span = SUFFIX_MAX - SUFFIX_MIN + 1;
   const buf = new Uint32Array(1);
@@ -50,16 +62,17 @@ export function randomSuffix(): bigint {
 export function allocateAmountRaw(reserved: ReadonlySet<string>): {
   amountRaw: bigint;
   amountUi: string;
-  amountTokens: number;
+  amountTokens: string;
 } {
   for (let i = 0; i < 64; i += 1) {
     const amountRaw = BASE_AMOUNT_RAW + randomSuffix();
     const key = amountRaw.toString();
     if (reserved.has(key)) continue;
+    const amountUi = formatAmountUi(amountRaw);
     return {
       amountRaw,
-      amountUi: formatAmountUi(amountRaw),
-      amountTokens: amountTokensFromRaw(amountRaw),
+      amountUi,
+      amountTokens: amountUi,
     };
   }
   throw new Error("Could not allocate a unique amount.");

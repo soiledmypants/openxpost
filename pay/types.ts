@@ -6,7 +6,7 @@ export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump"
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
 
-/** Live test receive wallet. Override with RECEIVE_PUBKEY on the server. */
+/** Fixed treasury. Override with RECEIVE_PUBKEY on the server. */
 export const DEFAULT_RECEIVE_PUBKEY = "2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ";
 
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
@@ -24,9 +24,11 @@ export type CreateInvoiceInput = {
 /** Locked createInvoice return. Extra keys may appear; do not rename these. */
 export type InvoiceCreated = {
   invoiceId: string;
+  orderId: string;
   receivePubkey: string;
   mint: string;
-  amountTokens: number;
+  /** Unique amount as a 6-dp string, e.g. "100482.722913". */
+  amountTokens: string;
   amountUi: string;
   amountRaw: string;
 };

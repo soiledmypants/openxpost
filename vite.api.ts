@@ -1,6 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
-import { handleInvoice, handlePost } from "./server/post";
+import { handleInvoice } from "./server/invoice-http";
+import { handlePost } from "./server/post";
+import { handleInvoicePaid } from "./server/status-http";
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -54,6 +56,12 @@ async function handleNode(
     const raw = req.method === "GET" ? "" : await readBody(req);
     const body = raw ? (JSON.parse(raw) as unknown) : {};
     if (kind === "invoice") {
+      const id = url.searchParams.get("id")?.trim() ?? "";
+      if (req.method !== "POST" && id) {
+        const result = await handleInvoicePaid(req.method ?? "GET", url);
+        write(result.status, result.body);
+        return;
+      }
       const result = await handleInvoice(req.method ?? "GET", url, body);
       write(result.status, result.body);
       return;

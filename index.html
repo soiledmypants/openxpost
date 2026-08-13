@@ -62,24 +62,15 @@
 
       <section class="section" id="how">
         <p class="eyebrow">How it works</p>
-        <h2>Chat. Pay. Burn. Post.</h2>
+        <h2>Draft. Pay. Burn. Post.</h2>
         <div class="cards">
           <article class="card">
-            <h3>Chat</h3>
-            <p class="card-copy">Draft with the agent. It checks the rules before you pay.</p>
-            <div class="mock mock-chat">
-              <div class="mock-line">
-                <strong>OpenXPost</strong>
-                Draft the line. I check the rules.
-              </div>
-              <div class="mock-line">
-                <strong>You</strong>
-                gm. shipping in public.
-              </div>
-              <div class="thinking" aria-hidden="true">
-                <span>Thinking</span>
-                <span class="thinking-bar"><span></span></span>
-              </div>
+            <h3>Draft</h3>
+            <p class="card-copy">Write the tweet. Rules are checked before you get an amount.</p>
+            <div class="mock">
+              <p class="eyebrow">Draft</p>
+              <p class="mock-amount compact">gm. shipping in public.</p>
+              <p class="muted">No URLs, other tickers, CAs, wallets, or shills.</p>
             </div>
           </article>
           <article class="card">
@@ -156,17 +147,7 @@
               placeholder="280 characters. No URLs, other tickers, CAs, wallets, or shills."
             ></textarea>
             <div class="row-actions">
-              <button class="btn btn-secondary" id="review" type="button">Review</button>
               <button class="btn btn-primary" id="get-quote" type="button">Get amount</button>
-            </div>
-            <div class="agent">
-              <p class="eyebrow">Agent</p>
-              <div id="agent-log" aria-live="polite"></div>
-              <form id="agent-form">
-                <label class="visually-hidden" for="agent-ask">Ask the agent</label>
-                <input id="agent-ask" name="ask" maxlength="240" placeholder="Ask the agent" />
-                <button class="btn btn-secondary" type="submit">Send</button>
-              </form>
             </div>
           </div>
           <div class="panel" id="quote-root"></div>
