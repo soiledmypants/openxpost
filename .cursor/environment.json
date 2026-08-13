@@ -1,0 +1,10 @@
+{
+  "name": "OpenXPost",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "vite",
+      "command": "npm run dev"
+    }
+  ]
+}
