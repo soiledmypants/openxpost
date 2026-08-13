@@ -4,7 +4,7 @@ import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } fro
 import { statusUrl } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
 import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
-import { silentReject } from "./reject";
+import { isHiddenTestPost } from "./hidden-test-posts";
 import { getStore, type StoredInvoice } from "./store";
 
 /** Create/store only. Do not import onchain, web3, spl-token, or wallet adapters. */
@@ -47,9 +47,6 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
   const hits = checkDraft(postText);
   if (hits.length > 0) {
     throw new Error(hits.map((hit) => hit.message).join(" "));
-  }
-  if (silentReject(postText)) {
-    throw new Error("Could not create invoice.");
   }
   const expectedHash = await postTextHash(postText);
   if (input.postTextHash && input.postTextHash !== expectedHash) {
@@ -94,6 +91,7 @@ export async function publicBoard(): Promise<PublicBoard> {
     invoices = [];
   }
   const posted = invoices
+    .filter((row) => !isHiddenTestPost(row.invoiceId, row.tweetId ?? ""))
     .filter((row) => Boolean(row.txSig && row.postText && row.paidAt && (row.tweetUrl || row.tweetId)))
     .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "") || b.createdAt - a.createdAt)
     .map((row) => {
