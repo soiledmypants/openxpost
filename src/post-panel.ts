@@ -104,14 +104,19 @@ export function mountPostPanel(): void {
     amount.textContent = `100,000 ${TOKEN_TICKER}`;
     card.append(amount);
 
-    const dest = document.createElement("p");
-    dest.className = "muted";
-    dest.textContent = `to ${receive}`;
+    const destLabel = document.createElement("p");
+    destLabel.className = "eyebrow";
+    destLabel.textContent = "Pay address";
+    card.append(destLabel);
+
+    const dest = document.createElement("code");
+    dest.className = "pay-address";
+    dest.textContent = receive;
     card.append(dest);
 
     const actions = document.createElement("div");
     actions.className = "quote-actions";
-    actions.append(copyButton("Copy address", "receive", receive));
+    actions.append(copyButton("Copy", "receive", receive));
     if (state?.phase === "error" && state.paid && !state.tweetUrl) {
       const retry = document.createElement("button");
       retry.type = "button";

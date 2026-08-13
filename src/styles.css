@@ -496,6 +496,15 @@ a {
   color: var(--fg);
 }
 
+.pay-address {
+  margin: 0;
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  word-break: break-all;
+}
+
 .quote-actions {
   display: flex;
   flex-wrap: wrap;

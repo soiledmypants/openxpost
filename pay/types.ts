@@ -6,7 +6,7 @@ export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump"
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
 
-/** Fixed treasury. Override with RECEIVE_PUBKEY on the server. */
+/** Fixed treasury. Copyable Pay address on the site. Public key only. */
 export const DEFAULT_RECEIVE_PUBKEY = "8MSPPTBff7jamWFQHQUjTMmt24Yv9LdWBpm3sizjziup";
 
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
