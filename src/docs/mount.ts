@@ -1,24 +1,11 @@
 import { copyText } from "../lib/dom";
+import { isPostsPath, parseAppRoute } from "../lib/route";
 import { allFiles, getFile, toTree, type TreeEntry } from "./catalog";
 import { highlight, lineCount } from "./highlight";
 import { HOW_LEDE, HOW_SECTIONS, HOW_TITLE } from "./how";
 
-const HOW_HASH = "#docs";
-
-function parseAppHash(
-  hash: string,
-): { view: "docs"; file: string | null } | { view: "posts" } | { view: "home" } {
-  if (hash === "#posts" || hash === "#posts/") {
-    return { view: "posts" };
-  }
-  if (hash === "#docs" || hash === "#docs/") {
-    return { view: "docs", file: null };
-  }
-  if (hash.startsWith("#docs/")) {
-    return { view: "docs", file: decodeURIComponent(hash.slice("#docs/".length)) };
-  }
-  return { view: "home" };
-}
+const HOW_HASH = "/#docs";
+const POSTS_PATH = "/post/";
 
 function renderHow(pane: HTMLElement): void {
   const article = document.createElement("article");
@@ -132,7 +119,7 @@ function treeNode(entry: TreeEntry, active: string | null, depth: number): HTMLE
   if (entry.kind === "file") {
     const a = document.createElement("a");
     a.className = "docs-file-link";
-    a.href = `#docs/${entry.path}`;
+    a.href = `/#docs/${entry.path}`;
     a.textContent = entry.name;
     a.style.paddingLeft = `${14 + depth * 14}px`;
     if (active === entry.path) a.setAttribute("aria-current", "page");
@@ -157,9 +144,17 @@ function syncNavCurrent(view: "docs" | "posts" | "home"): void {
   for (const link of links) {
     const href = link.getAttribute("href");
     const current =
-      (view === "docs" && href === "#docs") || (view === "posts" && href === "#posts");
+      (view === "docs" && (href === "#docs" || href === "/#docs")) ||
+      (view === "posts" && (href === POSTS_PATH || href === "/post"));
     if (current) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
+  }
+}
+
+function canonicalizePostsUrl(): void {
+  const leftoverHash = location.hash === "#posts" || location.hash === "#posts/";
+  if (leftoverHash || (isPostsPath(location.pathname) && location.pathname !== POSTS_PATH)) {
+    history.replaceState(null, "", POSTS_PATH);
   }
 }
 
@@ -180,16 +175,20 @@ export function mountDocs(): void {
   }
 
   const apply = (): void => {
-    const parsed = parseAppHash(location.hash);
+    canonicalizePostsUrl();
+    const parsed = parseAppRoute(location.pathname, location.hash);
     const isDocs = parsed.view === "docs";
     const isPosts = parsed.view === "posts";
     home.hidden = isDocs || isPosts;
     docs.hidden = !isDocs;
     posts.hidden = !isPosts;
+    document.documentElement.classList.toggle("route-posts", isPosts);
     document.body.classList.toggle("is-docs", isDocs);
     document.body.classList.toggle("is-posts", isPosts);
     document.title = isDocs ? "Docs · OpenXPost" : isPosts ? "Posts · OpenXPost" : "OpenXPost";
     syncNavCurrent(parsed.view);
+    const skip = document.querySelector<HTMLAnchorElement>("a.skip");
+    if (skip) skip.href = isPosts ? "#posts" : "#post";
 
     if (parsed.view === "home") {
       const id = location.hash.slice(1);
@@ -208,4 +207,5 @@ export function mountDocs(): void {
 
   apply();
   window.addEventListener("hashchange", apply);
+  window.addEventListener("popstate", apply);
 }

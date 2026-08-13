@@ -141,8 +141,13 @@ export function mountPostPanel(): void {
     const meta = document.createElement("p");
     meta.className = "muted";
     const phase = state?.phase;
-    if (phase === "posted") meta.textContent = "Posted. See Posts.";
-    else if (phase === "posting") meta.textContent = "Paid. Posting.";
+    if (phase === "posted") {
+      meta.append("Posted. ");
+      const postsLink = document.createElement("a");
+      postsLink.href = "/post/";
+      postsLink.textContent = "See Posts.";
+      meta.append(postsLink);
+    } else if (phase === "posting") meta.textContent = "Paid. Posting.";
     else if (phase === "signing") meta.textContent = "Sign in your wallet.";
     else if (phase === "error") {
       meta.textContent = state?.paid

@@ -85,11 +85,6 @@ a {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 12px var(--space);
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid transparent;
@@ -97,6 +92,25 @@ a {
 
 .site-header.is-stuck {
   border-bottom-color: var(--line);
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px var(--space);
+}
+
+.pin-bar {
+  margin: 0;
+  padding: 8px var(--space) 10px;
+  border-top: 1px solid var(--line);
+  color: var(--fg);
+  font-size: 14px;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .wordmark {
@@ -128,6 +142,28 @@ a {
 
 .nav a[aria-current="page"] {
   color: var(--fg);
+}
+
+.pin-bar a,
+.pin-copy a,
+.lede a,
+.card-copy a,
+.footer-copy a {
+  color: var(--fg);
+  text-underline-offset: 3px;
+}
+
+.pin-copy {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  letter-spacing: -0.015em;
+  line-height: 1.45;
+}
+
+.hero .pin-copy {
+  max-width: 34em;
+  margin-top: 16px;
 }
 
 .x-handle {
@@ -551,6 +587,31 @@ a {
   max-width: 800px;
 }
 
+.posts-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.posts-title .x-handle {
+  color: inherit;
+  font-size: inherit;
+}
+
+.posts-section .pin-copy {
+  margin: 0 0 20px;
+}
+
+html.route-posts #home,
+html.route-posts #docs {
+  display: none !important;
+}
+
+html.route-posts #posts {
+  display: block !important;
+}
+
 .posts-list {
   display: flex;
   flex-direction: column;
@@ -605,6 +666,20 @@ a {
 .site-footer p {
   margin: 0;
   max-width: 46em;
+}
+
+.footer-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  max-width: 46em;
+}
+
+.footer-copy .pin-copy {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg);
 }
 
 .ca-slot {
@@ -665,8 +740,8 @@ a {
 
 .docs-tree {
   position: sticky;
-  top: 72px;
-  max-height: calc(100vh - 160px);
+  top: 112px;
+  max-height: calc(100vh - 200px);
   overflow: auto;
 }
 
@@ -829,7 +904,7 @@ a {
 }
 
 @media (max-width: 900px) {
-  .site-header {
+  .header-row {
     flex-wrap: wrap;
   }
 
