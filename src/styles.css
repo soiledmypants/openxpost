@@ -313,28 +313,6 @@ a {
   background: #000;
 }
 
-.mock-chat {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.mock-line {
-  font-size: 13px;
-  letter-spacing: -0.01em;
-  line-height: 1.45;
-}
-
-.mock-line strong {
-  display: block;
-  margin-bottom: 2px;
-  color: var(--faint);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .mock-amount {
   margin: 8px 0 4px;
   font-size: 22px;
@@ -358,41 +336,6 @@ a {
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 13px;
-}
-
-.thinking {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.thinking-bar {
-  position: relative;
-  flex: 1;
-  max-width: 112px;
-  height: 1px;
-  overflow: hidden;
-  border-radius: 1px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.thinking-bar > span {
-  display: block;
-  width: 38%;
-  height: 100%;
-  background: #fff;
-  animation: think 1.35s ease-in-out infinite;
-}
-
-@keyframes think {
-  0% {
-    transform: translateX(-130%);
-  }
-  100% {
-    transform: translateX(360%);
-  }
 }
 
 .rules {
@@ -427,7 +370,7 @@ a {
 .panel {
   display: flex;
   flex-direction: column;
-  min-height: 360px;
+  min-height: 520px;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -481,6 +424,17 @@ a {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+.review-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: -0.015em;
+}
+
+.review-status.is-bad {
+  color: var(--fg);
 }
 
 .quote-card {
@@ -647,6 +601,11 @@ a {
   color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 12px;
+}
+
+.wallet-label {
+  margin: 10px 0 0;
+  font-size: 13px;
 }
 
 .site-footer strong {
@@ -889,11 +848,5 @@ a {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-
-  .thinking-bar > span {
-    animation: none;
-    width: 100%;
-    opacity: 0.45;
   }
 }
