@@ -92,9 +92,9 @@ export async function connectWallet(name?: string): Promise<string> {
  * never cache a blockhash or attach it to a later transfer.
  */
 function warmupRpc(): Promise<void> {
-  const connection = new Connection(solanaRpc(), "confirmed");
+  const connection = new Connection(solanaRpc(), "processed");
   return connection
-    .getLatestBlockhash("confirmed")
+    .getLatestBlockhash("processed")
     .then(() => undefined)
     .catch(() => undefined);
 }
@@ -115,9 +115,10 @@ export async function signAndSend(transaction: Transaction): Promise<string> {
   if (!current?.publicKey) {
     throw new Error("Connect Phantom or Solflare first.");
   }
-  const connection = new Connection(solanaRpc(), "confirmed");
+  const connection = new Connection(solanaRpc(), "processed");
   const sig = await current.sendTransaction(transaction, connection, {
-    skipPreflight: false,
+    skipPreflight: true,
+    preflightCommitment: "processed",
   });
   return typeof sig === "string" ? sig : String(sig);
 }

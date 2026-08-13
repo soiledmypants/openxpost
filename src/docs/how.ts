@@ -5,7 +5,7 @@ const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `OpenXPost is an open microphone on our X account. You connect a wallet, write a draft, and pay ${PRICE} ${TOKEN_TICKER} to the treasury. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
+  `OpenXPost is an open microphone on our X account. You connect a wallet, write a draft, and pay ${PRICE} ${TOKEN_TICKER} to the treasury. We post your text. See it in Posts. You are not buying a For You slot.`;
 
 export type HowSection = {
   title: string;
@@ -37,7 +37,7 @@ export const HOW_SECTIONS: HowSection[] = [
     title: "Post on X",
     paragraphs: [
       "After paid, the server re-filters the draft, then posts with the official X API: POST /2/tweets, body { \"text\": \"...\" } only. OAuth 2.0 user context for @OpenXPost. No tokens in the browser.",
-      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id}. It is never written into the tweet. If X fails after payment, retry the post. Do not pay again.",
+      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id} in the Posts tab, with the 100,000 $POST transfer signature. It is never written into the tweet. If X fails after payment, retry the tweet. Do not pay again.",
     ],
   },
   {

@@ -5,7 +5,12 @@ import { HOW_LEDE, HOW_SECTIONS, HOW_TITLE } from "./how";
 
 const HOW_HASH = "#docs";
 
-function parseDocsHash(hash: string): { view: "docs"; file: string | null } | { view: "home" } {
+function parseAppHash(
+  hash: string,
+): { view: "docs"; file: string | null } | { view: "posts" } | { view: "home" } {
+  if (hash === "#posts" || hash === "#posts/") {
+    return { view: "posts" };
+  }
   if (hash === "#docs" || hash === "#docs/") {
     return { view: "docs", file: null };
   }
@@ -147,11 +152,13 @@ function treeNode(entry: TreeEntry, active: string | null, depth: number): HTMLE
   return wrap;
 }
 
-function syncNavCurrent(docs: boolean): void {
+function syncNavCurrent(view: "docs" | "posts" | "home"): void {
   const links = document.querySelectorAll<HTMLAnchorElement>(".nav a");
   for (const link of links) {
-    const isDocs = link.getAttribute("href") === "#docs";
-    if (docs && isDocs) link.setAttribute("aria-current", "page");
+    const href = link.getAttribute("href");
+    const current =
+      (view === "docs" && href === "#docs") || (view === "posts" && href === "#posts");
+    if (current) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   }
 }
@@ -159,10 +166,11 @@ function syncNavCurrent(docs: boolean): void {
 export function mountDocs(): void {
   const home = document.getElementById("home");
   const docs = document.getElementById("docs");
+  const posts = document.getElementById("posts");
   const tree = document.getElementById("docs-nav");
   const pane = document.getElementById("docs-pane");
   const count = document.getElementById("docs-count");
-  if (!home || !docs || !tree || !pane) {
+  if (!home || !docs || !posts || !tree || !pane) {
     throw new Error("docs shell missing");
   }
 
@@ -172,15 +180,18 @@ export function mountDocs(): void {
   }
 
   const apply = (): void => {
-    const parsed = parseDocsHash(location.hash);
+    const parsed = parseAppHash(location.hash);
     const isDocs = parsed.view === "docs";
-    home.hidden = isDocs;
+    const isPosts = parsed.view === "posts";
+    home.hidden = isDocs || isPosts;
     docs.hidden = !isDocs;
+    posts.hidden = !isPosts;
     document.body.classList.toggle("is-docs", isDocs);
-    document.title = isDocs ? "Docs · OpenXPost" : "OpenXPost";
-    syncNavCurrent(isDocs);
+    document.body.classList.toggle("is-posts", isPosts);
+    document.title = isDocs ? "Docs · OpenXPost" : isPosts ? "Posts · OpenXPost" : "OpenXPost";
+    syncNavCurrent(parsed.view);
 
-    if (!isDocs) {
+    if (parsed.view === "home") {
       const id = location.hash.slice(1);
       if (id) {
         document.getElementById(id)?.scrollIntoView();
@@ -189,6 +200,7 @@ export function mountDocs(): void {
     }
 
     window.scrollTo(0, 0);
+    if (parsed.view !== "docs") return;
     renderTree(tree, parsed.file);
     if (parsed.file) renderFile(pane, parsed.file);
     else renderHow(pane);

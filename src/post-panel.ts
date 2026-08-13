@@ -1,23 +1,21 @@
-import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash, readPaid } from "../pay";
+import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash } from "../pay";
 import type { InvoiceCreated, InvoicePaid, PostedPair } from "../pay/types";
 import { solscanTxUrl } from "../pay/types";
-import { receivePubkey as defaultReceive, TOKEN_TICKER } from "./config";
+import { receivePubkey as defaultReceive, TOKEN_TICKER, tokenMint } from "./config";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
-import { confirmPaySignature, payFixedPost } from "./transfer";
+import { clearPayPrefetch, payFixedPost, prefetchPayTransfer, watchPaySignature } from "./transfer";
 import { connectedPubkey, connectWallet, onWalletChange, shortenPubkey } from "./wallet";
-
-const POLL_MS = 4000;
 
 type PayState = {
   draft: string;
   fromPubkey: string;
   orderId: string;
-  invoice: InvoiceCreated;
+  invoice: InvoiceCreated | null;
   paid: InvoicePaid | null;
   tweetUrl: string | null;
   postError: string | null;
-  phase: "signing" | "waiting" | "posting" | "posted" | "error";
+  phase: "signing" | "posting" | "posted" | "error";
 };
 
 function displayUrl(url: string): string {
@@ -35,6 +33,11 @@ function formatTime(iso: string): string {
   });
 }
 
+function shortenSig(sig: string): string {
+  if (sig.length <= 16) return sig;
+  return `${sig.slice(0, 8)}…${sig.slice(-8)}`;
+}
+
 export function mountPostPanel(): void {
   const draft = $("draft") as HTMLTextAreaElement;
   const count = $("count");
@@ -43,11 +46,13 @@ export function mountPostPanel(): void {
   const quoteRoot = $("quote-root");
   const walletLabel = $("wallet-label");
   const reviewStatus = $("review-status");
+  const postsList = document.getElementById("posts-list");
+  const postsCount = document.getElementById("posts-count");
 
-  let pollTimer = 0;
   let state: PayState | null = null;
   let copied: string | null = null;
   let posted: PostedPair[] = [];
+  let invoiceWork: Promise<InvoiceCreated> | null = null;
   const receive = defaultReceive();
 
   function setReviewStatus(text: string, bad = false): void {
@@ -67,7 +72,7 @@ export function mountPostPanel(): void {
   }
 
   function paying(): boolean {
-    return Boolean(state && state.phase !== "error" && state.phase !== "posted");
+    return state?.phase === "signing";
   }
 
   function refreshWallet(): void {
@@ -90,11 +95,6 @@ export function mountPostPanel(): void {
     count.textContent = `${n} / ${MAX_CHARS}`;
     count.classList.toggle("is-hot", n > MAX_CHARS - 20);
     updateButtons();
-  }
-
-  function stopPoll(): void {
-    window.clearInterval(pollTimer);
-    pollTimer = 0;
   }
 
   function upsertPosted(item: PostedPair): void {
@@ -123,7 +123,16 @@ export function mountPostPanel(): void {
     const actions = document.createElement("div");
     actions.className = "quote-actions";
     actions.append(copyButton("Copy address", "receive", receive));
-    if (state?.phase === "error" && !state.tweetUrl) {
+    if (state?.phase === "error" && state.paid && !state.tweetUrl) {
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "btn btn-primary";
+      retry.textContent = "Retry tweet";
+      retry.addEventListener("click", () => {
+        void tweet();
+      });
+      actions.append(retry);
+    } else if (state?.phase === "error" && !state.paid) {
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "btn btn-primary";
@@ -138,98 +147,71 @@ export function mountPostPanel(): void {
     const meta = document.createElement("p");
     meta.className = "muted";
     const phase = state?.phase;
-    if (phase === "posted") meta.textContent = "Posted";
-    else if (phase === "posting") meta.textContent = "Posting";
+    if (phase === "posted") meta.textContent = "Posted. See Posts.";
+    else if (phase === "posting") meta.textContent = "Paid. Posting.";
     else if (phase === "signing") meta.textContent = "Sign in your wallet.";
-    else if (phase === "waiting") meta.textContent = "Waiting for the 100,000 $POST transfer";
-    else if (phase === "error") meta.textContent = state?.postError || "Needs retry";
-    else {
+    else if (phase === "error") {
+      meta.textContent = state?.paid
+        ? state.postError || "Paid. Tweet needs retry."
+        : state?.postError || "Needs retry";
+    } else {
       meta.textContent = connectedPubkey()
         ? `Sign exactly 100,000 ${TOKEN_TICKER} from this wallet to the treasury.`
         : `Connect Phantom or Solflare. Sign exactly 100,000 ${TOKEN_TICKER} to the treasury.`;
     }
     card.append(meta);
 
-    const paySig = state?.paid?.txSig ?? null;
-    if (state && (state.tweetUrl || paySig || state.postError)) {
-      card.append(renderPair(state.tweetUrl, paySig, state.postError));
+    if (state?.paid?.txSig) {
+      const payLine = document.createElement("p");
+      payLine.className = "muted";
+      const href = solscanTxUrl(state.paid.txSig);
+      payLine.append(linkEl(href, displayUrl(href)));
+      card.append(payLine);
+    }
+
+    if (state?.tweetUrl) {
+      card.append(linkEl(state.tweetUrl, displayUrl(state.tweetUrl)));
     }
 
     quoteRoot.append(card);
-    renderPosted(quoteRoot);
   }
 
-  function renderPair(
-    tweetUrl: string | null,
-    txSig: string | null,
-    postError: string | null,
-  ): HTMLElement {
-    const pair = document.createElement("div");
-    pair.className = "pair";
-
-    const tweetCol = document.createElement("div");
-    tweetCol.className = "pair-col";
-    const tweetLabel = document.createElement("p");
-    tweetLabel.className = "eyebrow";
-    tweetLabel.textContent = "Tweet";
-    tweetCol.append(tweetLabel);
-    if (tweetUrl) {
-      tweetCol.append(linkEl(tweetUrl, displayUrl(tweetUrl)));
-      tweetCol.append(copyButton("Copy tweet", "tweet", tweetUrl, true));
-    } else if (postError) {
-      const err = document.createElement("p");
-      err.className = "muted";
-      err.textContent = postError;
-      tweetCol.append(err);
-    } else {
-      const pending = document.createElement("p");
-      pending.className = "muted";
-      pending.textContent = "Posting";
-      tweetCol.append(pending);
+  function renderPosts(): void {
+    if (postsCount) {
+      postsCount.textContent = posted.length === 1 ? "1 post" : `${posted.length} posts`;
     }
-
-    const payCol = document.createElement("div");
-    payCol.className = "pair-col";
-    const payLabel = document.createElement("p");
-    payLabel.className = "eyebrow";
-    payLabel.textContent = "Payment";
-    payCol.append(payLabel);
-    if (txSig) {
-      const href = solscanTxUrl(txSig);
-      payCol.append(linkEl(href, displayUrl(href)));
-      payCol.append(copyButton("Copy payment", "pay", txSig, true));
-    } else {
-      const pending = document.createElement("p");
-      pending.className = "muted";
-      pending.textContent = "Waiting";
-      payCol.append(pending);
+    if (!postsList) return;
+    postsList.replaceChildren();
+    if (posted.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No posts yet.";
+      postsList.append(empty);
+      return;
     }
-
-    pair.append(tweetCol, payCol);
-    return pair;
-  }
-
-  function renderPosted(root: HTMLElement): void {
-    if (posted.length === 0) return;
-    const wrap = document.createElement("div");
-    wrap.className = "posted";
-    const title = document.createElement("p");
-    title.className = "eyebrow";
-    title.textContent = "Posted";
-    wrap.append(title);
     for (const item of posted) {
-      const row = document.createElement("div");
-      row.className = "posted-row";
-      row.append(linkEl(item.tweetUrl, displayUrl(item.tweetUrl)));
-      const payHref = solscanTxUrl(item.txSig);
-      row.append(linkEl(payHref, displayUrl(payHref)));
-      const time = document.createElement("time");
-      time.dateTime = item.paidAt;
-      time.textContent = formatTime(item.paidAt);
-      row.append(time);
-      wrap.append(row);
+      const row = document.createElement("article");
+      row.className = "posts-row";
+
+      const text = document.createElement("p");
+      text.className = "posts-text";
+      text.textContent = item.tweetText || item.tweetUrl;
+      row.append(text);
+
+      const links = document.createElement("div");
+      links.className = "posts-meta";
+      links.append(linkEl(item.tweetUrl, displayUrl(item.tweetUrl)));
+      const txHref = solscanTxUrl(item.txSig);
+      links.append(linkEl(txHref, shortenSig(item.txSig)));
+      if (item.paidAt) {
+        const time = document.createElement("time");
+        time.dateTime = item.paidAt;
+        time.textContent = formatTime(item.paidAt);
+        links.append(time);
+      }
+      row.append(links);
+      postsList.append(row);
     }
-    root.append(wrap);
   }
 
   function linkEl(href: string, label: string): HTMLAnchorElement {
@@ -263,45 +245,67 @@ export function mountPostPanel(): void {
     return btn;
   }
 
+  async function ensureInvoice(): Promise<InvoiceCreated> {
+    if (state?.invoice) return state.invoice;
+    if (invoiceWork) {
+      const invoice = await invoiceWork;
+      if (state) {
+        state = {
+          ...state,
+          invoice,
+          paid: state.paid
+            ? {
+                ...state.paid,
+                invoiceId: invoice.invoiceId,
+                orderId: invoice.orderId,
+                amountTokens: invoice.amountTokens,
+                mint: invoice.mint,
+              }
+            : null,
+        };
+      }
+      return invoice;
+    }
+    throw new Error("Could not create invoice. Payment is kept; retry tweet.");
+  }
+
   async function tweet(): Promise<void> {
     if (!state?.paid) return;
+    const orderId = state.orderId;
+    const paid = state.paid;
+    const draftText = state.draft;
     state = { ...state, phase: "posting", postError: null };
+    setReviewStatus("");
     renderQuote();
-    const result = await postPaidTweet(state.invoice.invoiceId);
-    if (!state) return;
-    if (result.ok) {
-      state = { ...state, phase: "posted", tweetUrl: result.tweetUrl, postError: null };
-      if (state.paid?.txSig) {
+    try {
+      const invoice = await ensureInvoice();
+      if (!state || state.orderId !== orderId) return;
+      const result = await postPaidTweet(invoice.invoiceId, paid.txSig);
+      if (!state || state.orderId !== orderId) return;
+      if (result.ok) {
+        state = { ...state, invoice, phase: "posted", tweetUrl: result.tweetUrl, postError: null };
         upsertPosted({
-          invoiceId: state.invoice.invoiceId,
+          invoiceId: invoice.invoiceId,
           tweetUrl: result.tweetUrl,
-          txSig: state.paid.txSig,
-          paidAt: state.paid.paidAt,
+          tweetText: draftText,
+          txSig: paid.txSig,
+          paidAt: paid.paidAt,
         });
+        const board = await loadBoard();
+        posted = board.posted;
+        renderPosts();
+      } else {
+        state = { ...state, invoice, phase: "error", postError: result.error };
+        setReviewStatus(result.error, true);
       }
-      const board = await loadBoard();
-      posted = board.posted;
-    } else {
-      state = { ...state, phase: "error", postError: result.error };
-      setReviewStatus(result.error, true);
+    } catch (error) {
+      if (!state || state.orderId !== orderId) return;
+      const message = error instanceof Error ? error.message : "Could not post. Payment is kept; retry tweet.";
+      state = { ...state, phase: "error", postError: message };
+      setReviewStatus(message, true);
     }
     renderQuote();
     updateButtons();
-  }
-
-  function startPoll(): void {
-    stopPoll();
-    pollTimer = window.setInterval(() => {
-      void (async () => {
-        if (!state || state.paid) return;
-        const paid = await readPaid(state.invoice.invoiceId);
-        if (!paid || !state) return;
-        stopPoll();
-        state = { ...state, paid, phase: "posting" };
-        renderQuote();
-        await tweet();
-      })();
-    }, POLL_MS);
   }
 
   async function resume(): Promise<void> {
@@ -319,14 +323,30 @@ export function mountPostPanel(): void {
       if (!connectedPubkey()) {
         await connectWallet();
         refreshWallet();
+        void prefetchPayTransfer();
       }
       const sent = await payFixedPost();
       if (!state) return;
-      state = { ...state, phase: "waiting" };
+      watchPaySignature(sent.signature);
+      const paidAt = new Date().toISOString();
+      state = {
+        ...state,
+        phase: "posting",
+        paid: {
+          type: "invoice.paid",
+          invoiceId: state.invoice?.invoiceId ?? "",
+          orderId: state.orderId,
+          txSig: sent.signature,
+          paidAt,
+          payer: state.fromPubkey,
+          amountTokens: state.invoice?.amountTokens ?? 100_000,
+          mint: state.invoice?.mint ?? tokenMint(),
+          slot: 0,
+        },
+      };
       renderQuote();
-      await confirmPaySignature(sent);
-      if (!state) return;
-      startPoll();
+      updateButtons();
+      await tweet();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Wallet transfer failed.";
       if (!state) return;
@@ -344,6 +364,7 @@ export function mountPostPanel(): void {
     if (!fromPubkey) {
       try {
         fromPubkey = await connectWallet();
+        void prefetchPayTransfer();
       } catch (error) {
         setReviewStatus(error instanceof Error ? error.message : "Could not connect.", true);
         refreshWallet();
@@ -353,34 +374,30 @@ export function mountPostPanel(): void {
     }
     if (!fromPubkey || !isDraftClean(draft.value)) return;
 
-    payBtn.disabled = true;
-    try {
-      const postText = draft.value.trim();
-      const orderId = newOrderId();
-      const invoice = await createInvoice({
-        orderId,
-        postText,
-        postTextHash: await postTextHash(postText),
-        fromPubkey,
-      });
-      state = {
-        draft: postText,
-        fromPubkey,
-        orderId,
-        invoice,
-        paid: null,
-        tweetUrl: null,
-        postError: null,
-        phase: "signing",
-      };
-      setReviewStatus("");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not create invoice.";
-      setReviewStatus(message, true);
-      updateButtons();
-      renderQuote();
-      return;
-    }
+    const postText = draft.value.trim();
+    const orderId = newOrderId();
+    invoiceWork = postTextHash(postText).then((hash) =>
+      createInvoice({ orderId, postText, postTextHash: hash, fromPubkey: fromPubkey as string }),
+    );
+    invoiceWork
+      .then((invoice) => {
+        if (state && state.orderId === orderId) {
+          state = { ...state, invoice };
+        }
+      })
+      .catch(() => undefined);
+
+    state = {
+      draft: postText,
+      fromPubkey,
+      orderId,
+      invoice: null,
+      paid: null,
+      tweetUrl: null,
+      postError: null,
+      phase: "signing",
+    };
+    setReviewStatus("");
     renderQuote();
     updateButtons();
     await resume();
@@ -395,6 +412,7 @@ export function mountPostPanel(): void {
     void (async () => {
       try {
         await connectWallet();
+        void prefetchPayTransfer();
         setReviewStatus("");
       } catch (error) {
         setReviewStatus(error instanceof Error ? error.message : "Could not connect.", true);
@@ -415,6 +433,8 @@ export function mountPostPanel(): void {
   });
 
   onWalletChange(() => {
+    if (connectedPubkey()) void prefetchPayTransfer();
+    else clearPayPrefetch();
     refreshWallet();
     renderQuote();
   });
@@ -422,8 +442,9 @@ export function mountPostPanel(): void {
   updateCount();
   refreshWallet();
   renderQuote();
+  renderPosts();
   void loadBoard().then((board) => {
     posted = board.posted;
-    renderQuote();
+    renderPosts();
   });
 }

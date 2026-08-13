@@ -94,6 +94,7 @@ export async function publicBoard(): Promise<PublicBoard> {
     .map((row) => ({
       invoiceId: row.invoiceId,
       tweetUrl: row.tweetUrl ?? "",
+      tweetText: row.postText ?? "",
       txSig: row.txSig ?? "",
       paidAt: row.paidAt ?? "",
     }))
