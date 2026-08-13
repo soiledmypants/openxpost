@@ -5,7 +5,7 @@ import type { Plugin } from "vite";
 
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
 const SKIP_FILES = new Set(["package-lock.json"]);
-const TEXT_EXT = new Set([".ts", ".css", ".html", ".json", ".md", ".svg", ".txt", ".toml"]);
+const TEXT_EXT = new Set([".ts", ".tsx", ".css", ".html", ".json", ".md", ".svg", ".txt", ".toml"]);
 const TEXT_NAMES = new Set([".gitignore"]);
 
 export type SourceFile = {
