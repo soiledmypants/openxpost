@@ -33,7 +33,7 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
       status: 402,
       body: {
         ok: false,
-        error: "Invoice is not paid yet (transfer + burn). Payment is kept; retry.",
+        error: "Invoice is not paid yet. Payment is kept; retry.",
         retry: true,
       },
     };
@@ -51,7 +51,6 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
       ...record,
       txSig: paid.txSig,
       payer: paid.payer,
-      burnSignature: paid.burnSignature,
       slot: paid.slot,
       paidAt: paid.paidAt,
       tweetId: posted.tweetId,

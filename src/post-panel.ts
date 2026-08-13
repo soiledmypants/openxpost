@@ -145,14 +145,14 @@ export function mountPostPanel(): void {
     else if (phase === "error") meta.textContent = state?.postError || "Needs retry";
     else {
       meta.textContent = connectedPubkey()
-        ? `Sign exactly 100,000 ${TOKEN_TICKER} from this wallet. Those tokens are burned after they land.`
-        : `Connect Phantom or Solflare. Sign exactly 100,000 ${TOKEN_TICKER}.`;
+        ? `Sign exactly 100,000 ${TOKEN_TICKER} from this wallet to the treasury.`
+        : `Connect Phantom or Solflare. Sign exactly 100,000 ${TOKEN_TICKER} to the treasury.`;
     }
     card.append(meta);
 
-    const burnSig = state?.paid?.burnSignature ?? null;
-    if (state && (state.tweetUrl || burnSig || state.postError)) {
-      card.append(renderPair(state.tweetUrl, burnSig, state.postError));
+    const paySig = state?.paid?.txSig ?? null;
+    if (state && (state.tweetUrl || paySig || state.postError)) {
+      card.append(renderPair(state.tweetUrl, paySig, state.postError));
     }
 
     quoteRoot.append(card);
@@ -161,7 +161,7 @@ export function mountPostPanel(): void {
 
   function renderPair(
     tweetUrl: string | null,
-    burnSignature: string | null,
+    txSig: string | null,
     postError: string | null,
   ): HTMLElement {
     const pair = document.createElement("div");
@@ -188,24 +188,24 @@ export function mountPostPanel(): void {
       tweetCol.append(pending);
     }
 
-    const burnCol = document.createElement("div");
-    burnCol.className = "pair-col";
-    const burnLabel = document.createElement("p");
-    burnLabel.className = "eyebrow";
-    burnLabel.textContent = "Burn";
-    burnCol.append(burnLabel);
-    if (burnSignature) {
-      const href = solscanTxUrl(burnSignature);
-      burnCol.append(linkEl(href, displayUrl(href)));
-      burnCol.append(copyButton("Copy burn", "burn", burnSignature, true));
+    const payCol = document.createElement("div");
+    payCol.className = "pair-col";
+    const payLabel = document.createElement("p");
+    payLabel.className = "eyebrow";
+    payLabel.textContent = "Payment";
+    payCol.append(payLabel);
+    if (txSig) {
+      const href = solscanTxUrl(txSig);
+      payCol.append(linkEl(href, displayUrl(href)));
+      payCol.append(copyButton("Copy payment", "pay", txSig, true));
     } else {
       const pending = document.createElement("p");
       pending.className = "muted";
       pending.textContent = "Waiting";
-      burnCol.append(pending);
+      payCol.append(pending);
     }
 
-    pair.append(tweetCol, burnCol);
+    pair.append(tweetCol, payCol);
     return pair;
   }
 
@@ -221,8 +221,8 @@ export function mountPostPanel(): void {
       const row = document.createElement("div");
       row.className = "posted-row";
       row.append(linkEl(item.tweetUrl, displayUrl(item.tweetUrl)));
-      const burnHref = solscanTxUrl(item.burnSignature);
-      row.append(linkEl(burnHref, displayUrl(burnHref)));
+      const payHref = solscanTxUrl(item.txSig);
+      row.append(linkEl(payHref, displayUrl(payHref)));
       const time = document.createElement("time");
       time.dateTime = item.paidAt;
       time.textContent = formatTime(item.paidAt);
@@ -271,11 +271,11 @@ export function mountPostPanel(): void {
     if (!state) return;
     if (result.ok) {
       state = { ...state, phase: "posted", tweetUrl: result.tweetUrl, postError: null };
-      if (state.paid?.burnSignature) {
+      if (state.paid?.txSig) {
         upsertPosted({
           invoiceId: state.invoice.invoiceId,
           tweetUrl: result.tweetUrl,
-          burnSignature: state.paid.burnSignature,
+          txSig: state.paid.txSig,
           paidAt: state.paid.paidAt,
         });
       }

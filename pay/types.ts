@@ -33,7 +33,7 @@ export type InvoiceCreated = {
   fromPubkey: string;
 };
 
-/** Locked invoice.paid fields. Reader must accept aliases. */
+/** Locked invoice.paid fields. Reader must accept aliases. No burnSignature. */
 export type InvoicePaid = {
   type: "invoice.paid";
   invoiceId: string;
@@ -43,7 +43,6 @@ export type InvoicePaid = {
   payer: string;
   amountTokens: number;
   mint: string;
-  burnSignature: string;
   slot: number;
 };
 
@@ -64,7 +63,7 @@ export type PostTweetResponse = PostTweetSuccess | PostTweetFailure;
 export type PostedPair = {
   invoiceId: string;
   tweetUrl: string;
-  burnSignature: string;
+  txSig: string;
   paidAt: string;
 };
 
@@ -121,16 +120,13 @@ export function readInvoicePaid(raw: unknown): InvoicePaid | null {
   const txSig = asString(
     pick(src, ["txSig", "tx_sig", "signature", "transferSignature", "paymentSignature", "sig"]),
   );
-  const burnSignature = asString(
-    pick(src, ["burnSignature", "burn_signature", "burnTx", "burnSig", "burnTxSig", "burn_tx"]),
-  );
   const mint = asString(pick(src, ["mint", "tokenMint", "token_mint"]));
   const amountTokens = asNumber(pick(src, ["amountTokens", "amount_tokens", "amount"]));
   const payer = asString(pick(src, ["payer", "from", "source", "fromPubkey"]));
   const paidAt = asString(pick(src, ["paidAt", "paid_at", "finalizedAt"]));
   const slot = asNumber(pick(src, ["slot"]));
 
-  if (!invoiceId || !orderId || !txSig || !burnSignature || !mint || !Number.isFinite(amountTokens)) {
+  if (!invoiceId || !orderId || !txSig || !mint || !Number.isFinite(amountTokens)) {
     return null;
   }
 
@@ -143,7 +139,6 @@ export function readInvoicePaid(raw: unknown): InvoicePaid | null {
     payer,
     amountTokens,
     mint,
-    burnSignature,
     slot: Number.isFinite(slot) ? slot : 0,
   };
 }

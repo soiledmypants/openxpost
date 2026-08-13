@@ -83,12 +83,15 @@ export async function connectWallet(name?: string): Promise<string> {
     throw new Error("Wallet connected without a public key.");
   }
   emit();
-  void prefetchLatestBlockhash();
+  void warmupRpc();
   return key.toBase58();
 }
 
-/** Warm /api/rpc after connect so Pay's getLatestBlockhash is ready. */
-function prefetchLatestBlockhash(): Promise<void> {
+/**
+ * Optional warmup of POST /api/rpc after connect. Discard the result —
+ * never cache a blockhash or attach it to a later transfer.
+ */
+function warmupRpc(): Promise<void> {
   const connection = new Connection(solanaRpc(), "confirmed");
   return connection
     .getLatestBlockhash("confirmed")

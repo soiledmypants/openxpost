@@ -147,14 +147,14 @@ export async function loadBoard(): Promise<PublicBoard> {
         if (!rawItem || typeof rawItem !== "object") continue;
         const item = rawItem as Partial<PostedPair>;
         const tweetUrl = typeof item.tweetUrl === "string" ? item.tweetUrl.trim() : "";
-        const burnSignature = typeof item.burnSignature === "string" ? item.burnSignature.trim() : "";
+        const txSig = typeof item.txSig === "string" ? item.txSig.trim() : "";
         const paidAt = typeof item.paidAt === "string" ? item.paidAt.trim() : "";
         const invoiceId = typeof item.invoiceId === "string" ? item.invoiceId.trim() : "";
-        if (!tweetUrl || !burnSignature) continue;
+        if (!tweetUrl || !txSig) continue;
         posted.push({
           invoiceId,
           tweetUrl,
-          burnSignature,
+          txSig,
           paidAt,
         });
       }

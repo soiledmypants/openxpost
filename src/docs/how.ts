@@ -5,7 +5,7 @@ const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `OpenXPost is an open microphone on our X account. You connect a wallet, write a draft, and pay ${PRICE} ${TOKEN_TICKER}. Those tokens are burned. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
+  `OpenXPost is an open microphone on our X account. You connect a wallet, write a draft, and pay ${PRICE} ${TOKEN_TICKER} to the treasury. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
 
 export type HowSection = {
   title: string;
@@ -21,9 +21,9 @@ export const HOW_SECTIONS: HowSection[] = [
     ],
   },
   {
-    title: "Burn",
+    title: "Treasury",
     paragraphs: [
-      "After that transfer lands, it is burned. It is not kept. invoice.paid includes amountTokens, mint, and burnSignature. The site shows the tweet next to that burn.",
+      "The 100,000 $POST stay in the treasury wallet. That is the payment. invoice.paid includes txSig, payer, amountTokens, and mint.",
     ],
   },
   {
@@ -37,7 +37,7 @@ export const HOW_SECTIONS: HowSection[] = [
     title: "Post on X",
     paragraphs: [
       "After paid, the server re-filters the draft, then posts with the official X API: POST /2/tweets, body { \"text\": \"...\" } only. OAuth 2.0 user context for @OpenXPost. No tokens in the browser.",
-      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id}, paired with the burn transaction. It is never written into the tweet. If X fails after payment, retry the post. Do not pay again.",
+      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id}. It is never written into the tweet. If X fails after payment, retry the post. Do not pay again.",
     ],
   },
   {
@@ -50,7 +50,7 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: "This tab is the source",
     paragraphs: [
-      "The file tree is this site, bundled at build time. Read Pay, the burn, the filter, and the page itself here. Nothing in this tab sends you somewhere else to see the code.",
+      "The file tree is this site, bundled at build time. Read Pay, the filter, and the page itself here. Nothing in this tab sends you somewhere else to see the code.",
     ],
   },
 ];

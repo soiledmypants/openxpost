@@ -20,7 +20,6 @@ export async function invoiceStatus(invoiceId: string): Promise<{
         ...record,
         txSig: paid.txSig,
         payer: paid.payer,
-        burnSignature: paid.burnSignature,
         slot: paid.slot,
         paidAt: paid.paidAt,
       };
