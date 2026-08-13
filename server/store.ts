@@ -6,9 +6,10 @@ export type StoredInvoice = {
   orderId: string;
   postText: string;
   postTextHash: string;
+  fromPubkey?: string;
   receivePubkey: string;
   mint: string;
-  amountTokens: number | string;
+  amountTokens: number;
   amountUi?: string;
   amountRaw?: string;
   createdAt: number;
