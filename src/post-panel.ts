@@ -289,6 +289,9 @@ export function mountPostPanel(): void {
       setReviewStatus("");
       renderQuote();
       updateButtons();
+      if (!tokenMint()) {
+        throw new Error("Payment mint is not configured.");
+      }
       if (!connectedPubkey()) {
         await connectWallet();
         refreshWallet();
@@ -329,6 +332,10 @@ export function mountPostPanel(): void {
   async function startPay(): Promise<void> {
     if (paying()) return;
     if (!silentRulesCheck()) return;
+    if (!tokenMint()) {
+      setReviewStatus("Payment mint is not configured.", true);
+      return;
+    }
     let fromPubkey = connectedPubkey();
     if (!fromPubkey) {
       try {

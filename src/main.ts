@@ -25,8 +25,18 @@ function mountHowPayAddress(): void {
 
 function mountCa(): void {
   const mint = tokenMint();
+  const slot = document.getElementById("ca-slot");
   const code = document.getElementById("ca-mint");
   const btn = document.getElementById("ca-copy");
+  if (!mint) {
+    slot?.setAttribute("hidden", "");
+    if (code) {
+      code.textContent = "";
+      code.removeAttribute("title");
+    }
+    return;
+  }
+  slot?.removeAttribute("hidden");
   if (code) {
     code.textContent = shortenMint(mint);
     code.title = mint;

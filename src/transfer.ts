@@ -24,8 +24,16 @@ function rpc(): Connection {
   return new Connection(solanaRpc(), "processed");
 }
 
+function requireMint(): PublicKey {
+  const mint = tokenMint();
+  if (!mint) {
+    throw new Error("Payment mint is not configured.");
+  }
+  return new PublicKey(mint);
+}
+
 async function loadPayAccounts(payer: PublicKey): Promise<PrefetchedPay> {
-  const mint = new PublicKey(tokenMint());
+  const mint = requireMint();
   const dest = new PublicKey(receivePubkey());
   const programId = TOKEN_2022_PROGRAM_ID;
   const srcAta = await getAssociatedTokenAddress(mint, payer, false, programId);

@@ -12,7 +12,7 @@ import {
 } from "@solana/web3.js";
 import type { InvoicePaid } from "../pay/types";
 import { MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
-import { solanaRpc } from "./env";
+import { solanaRpc, tokenMint } from "./env";
 import { getStore, type StoredInvoice } from "./store";
 
 const SIG_PAGE = 100;
@@ -157,8 +157,14 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
   const already = asPaid(invoice);
   if (already) return already;
 
+  const liveMint = tokenMint();
+  const invoiceMint = invoice.mint.trim();
+  if (!liveMint || !invoiceMint || invoiceMint !== liveMint) {
+    return null;
+  }
+
   const conn = connection();
-  const mint = new PublicKey(invoice.mint);
+  const mint = new PublicKey(invoiceMint);
   const owner = new PublicKey(invoice.receivePubkey);
   const programId = await tokenProgramOf(conn, mint);
   const ata = await getAssociatedTokenAddress(mint, owner, false, programId);
@@ -188,7 +194,7 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
     const matches = await matchingTransfers(
       conn,
       ata,
-      invoice.mint,
+      invoiceMint,
       rawAmount,
       merged.createdAt,
       now,
