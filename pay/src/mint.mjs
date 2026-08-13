@@ -7,8 +7,8 @@ import {
 } from "@solana/spl-token";
 
 export const MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump";
-export const AMOUNT_TOKENS = 10000;
-export const amountRaw = 10000000000n;
+export const AMOUNT_TOKENS = 100000;
+export const amountRaw = 100000000000n;
 export const DECIMALS = 6;
 export const TOKEN_2022 = TOKEN_2022_PROGRAM_ID;
 

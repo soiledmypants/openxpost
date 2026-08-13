@@ -17,7 +17,7 @@ export async function createInvoice({ orderId, postText, postTextHash }) {
       orderId,
       mint: MINT,
       amountTokens: AMOUNT_TOKENS,
-      amountRaw: "10000000000",
+      amountRaw: "100000000000",
       receivePubkey,
       postText: postText ?? "",
       postTextHash: postTextHash ?? "",

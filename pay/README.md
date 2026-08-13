@@ -1,6 +1,6 @@
 # OpenXPost Pay
 
-Token-2022 ROOTS invoices. Price is exactly 10,000 tokens. No wallet connect.
+Token-2022 ROOTS invoices. Price is exactly 100,000 tokens. No wallet connect.
 
 `createInvoice` mints a fresh receive keypair. The watcher observes the Token-2022 ATA at commitment `finalized`, then **burns** the tokens in place (`BurnChecked` + `CloseAccount`). It does not forward tokens to a burner address.
 

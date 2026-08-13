@@ -3,7 +3,7 @@ export function paidEvent(inv) {
     type: "invoice.paid",
     invoiceId: inv.id ?? inv.invoiceId,
     orderId: inv.orderId,
-    amountTokens: 10000,
+    amountTokens: 100000,
     mint: inv.mint,
     fromPubkey: inv.fromPubkey,
     signature: inv.signature,

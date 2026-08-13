@@ -29,7 +29,7 @@ assert.deepEqual(Object.keys(ev), [
 assert.equal(ev.type, "invoice.paid");
 assert.equal(ev.invoiceId, "inv_1");
 assert.equal(ev.orderId, "ord_1");
-assert.equal(ev.amountTokens, 10000);
+assert.equal(ev.amountTokens, 100000);
 assert.equal(ev.mint, "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump");
 assert.equal(ev.fromPubkey, "From111111111111111111111111111111111111111");
 assert.equal(ev.signature, "paySig");

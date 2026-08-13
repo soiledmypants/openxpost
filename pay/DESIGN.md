@@ -17,8 +17,8 @@ This process never logs or prints secrets. `DRY_RUN` defaults off (`DRY_RUN=1` o
 | program | Token-2022 `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb` (detect from mint owner) |
 | decimals | 6 |
 | symbol | ROOTS |
-| amountTokens | `10000` |
-| amountRaw | `10000000000` |
+| amountTokens | `100000` |
+| amountRaw | `100000000000` |
 
 ## Quote
 
@@ -35,12 +35,12 @@ Return exactly:
   "invoiceId": "...",
   "orderId": "...",
   "mint": "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump",
-  "amountTokens": 10000,
+  "amountTokens": 100000,
   "receivePubkey": "..."
 }
 ```
 
-Payer sends 10,000 ROOTS to the Token-2022 ATA of `receivePubkey`.
+Payer sends 100,000 ROOTS to the Token-2022 ATA of `receivePubkey`.
 
 ## Watch
 
@@ -49,14 +49,14 @@ Payer sends 10,000 ROOTS to the Token-2022 ATA of `receivePubkey`.
 1. Derive ATA (`ataFor`) using the token program taken from the mint account owner.
 2. `getSignaturesForAddress(ata)` then `getTransaction` `jsonParsed`.
 3. If `getTransaction` returns `null`, do not mark the signature seen. Skip failed txs.
-4. `tokenInflows`: `transfer` / `transferChecked` into that ATA with amount `10000000000`.
+4. `tokenInflows`: `transfer` / `transferChecked` into that ATA with amount `100000000000`.
 5. Match once: unique payment signature + `status === "open"` CAS.
 
 ## Burn (not a forward)
 
 On match, **do not** send tokens to a burner address. Burn in place, then close the ATA:
 
-1. `createBurnCheckedInstruction(ata, mint, owner=invoice, amount=10000000000, decimals=6)` on Token-2022.
+1. `createBurnCheckedInstruction(ata, mint, owner=invoice, amount=100000000000, decimals=6)` on Token-2022.
 2. `createCloseAccountInstruction` — remaining SOL rent goes to the fee payer.
 3. Fee payer: local `data/feepayer.key` JSON secret array. Invoice keypair co-signs.
 4. Wipe the invoice secret after a successful burn.
@@ -67,7 +67,7 @@ On match, **do not** send tokens to a burner address. Burn in place, then close 
   "type": "invoice.paid",
   "invoiceId": "...",
   "orderId": "...",
-  "amountTokens": 10000,
+  "amountTokens": 100000,
   "mint": "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump",
   "fromPubkey": "...",
   "signature": "...",
