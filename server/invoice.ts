@@ -1,28 +1,40 @@
-import { allocateAmountRaw, formatAmountUi, parseAmountRaw, RESERVE_GRACE_MS } from "../pay/amount";
+import {
+  allocateAmountRaw,
+  amountTokensNumber,
+  formatAmountUi,
+  isAmountUi,
+  parseAmountRaw,
+  RESERVE_GRACE_MS,
+} from "../pay/amount";
 import { postTextHash } from "../pay/hash";
 import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
 import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
-import { settleInvoice } from "./onchain";
 import { getStore, type StoredInvoice } from "./store";
 
-function publicInvoice(record: StoredInvoice): InvoiceCreated {
+export function publicInvoice(record: StoredInvoice): InvoiceCreated {
   const amountRaw = parseAmountRaw(record.amountRaw ?? "") ?? 0n;
   const amountUi = record.amountUi || (amountRaw > 0n ? formatAmountUi(amountRaw) : "0.000000");
+  const amountTokens =
+    typeof record.amountTokens === "string" && isAmountUi(record.amountTokens)
+      ? record.amountTokens
+      : amountUi;
   return {
     invoiceId: record.invoiceId,
+    orderId: record.orderId,
     receivePubkey: record.receivePubkey,
     mint: record.mint,
-    amountTokens: record.amountTokens,
+    amountTokens,
     amountUi,
     amountRaw: amountRaw > 0n ? amountRaw.toString() : record.amountRaw ?? "0",
   };
 }
 
-function paidFromRecord(record: StoredInvoice): InvoicePaid | null {
+export function paidFromRecord(record: StoredInvoice): InvoicePaid | null {
   if (!record.txSig || !record.burnSignature || !record.payer || !record.paidAt) {
     return null;
   }
+  const amountTokens = amountTokensNumber(record.amountTokens, record.amountRaw);
   return {
     type: "invoice.paid",
     invoiceId: record.invoiceId,
@@ -30,7 +42,7 @@ function paidFromRecord(record: StoredInvoice): InvoicePaid | null {
     txSig: record.txSig,
     paidAt: record.paidAt,
     payer: record.payer,
-    amountTokens: record.amountTokens,
+    amountTokens,
     mint: record.mint,
     burnSignature: record.burnSignature,
     slot: record.slot ?? 0,
@@ -108,31 +120,4 @@ export async function publicBoard(): Promise<PublicBoard> {
     amountTokens: baseAmountTokens(),
     posted,
   };
-}
-
-export async function invoiceStatus(invoiceId: string): Promise<{
-  invoice: InvoiceCreated;
-  paid: InvoicePaid | null;
-} | null> {
-  const store = await getStore();
-  let record = await store.getInvoice(invoiceId);
-  if (!record) return null;
-
-  let paid = paidFromRecord(record);
-  if (!paid) {
-    paid = await settleInvoice(record);
-    if (paid) {
-      record = {
-        ...record,
-        txSig: paid.txSig,
-        payer: paid.payer,
-        burnSignature: paid.burnSignature,
-        slot: paid.slot,
-        paidAt: paid.paidAt,
-      };
-      await store.putInvoice(record);
-    }
-  }
-
-  return { invoice: publicInvoice(record), paid };
 }

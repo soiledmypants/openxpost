@@ -1,3 +1,3 @@
-import { serve } from "../../server/serve";
+import { servePost } from "../../server/post";
 
-export default async (req: Request): Promise<Response> => serve(req, "post");
+export default async (req: Request): Promise<Response> => servePost(req);

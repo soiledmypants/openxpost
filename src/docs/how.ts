@@ -17,7 +17,7 @@ export const HOW_SECTIONS: HowSection[] = [
     title: `Unique amount, same wallet`,
     paragraphs: [
       `The price is ${PRICE} ${TOKEN_TICKER} plus a unique suffix, shown with 6 decimal places (for example 100482.722913). Send exactly that amount to the receive wallet. No wallet connect on this site.`,
-      `Pay returns invoiceId, receivePubkey, mint, amountUi, and amountRaw. Payment token is ${TOKEN_TICKER}. Exact transfer of amountRaw within the window identifies the order.`,
+      `Pay returns invoiceId, orderId, mint, amountTokens (6 decimal places), amountRaw, and receivePubkey. Payment token is ${TOKEN_TICKER}. Exact transfer of amountRaw within the window identifies the order.`,
     ],
   },
   {

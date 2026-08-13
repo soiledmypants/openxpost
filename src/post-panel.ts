@@ -2,11 +2,9 @@ import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash, read
 import type { InvoiceCreated, InvoicePaid, PostedPair } from "../pay/types";
 import { solscanTxUrl } from "../pay/types";
 import { receivePubkey as defaultReceive, TOKEN_TICKER } from "./config";
-import { answer, GREETING, reviewDraft, type ChatMessage, type ChatRole } from "./lib/agent";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
 
-const THINK_MS = 720;
 const POLL_MS = 4000;
 
 type PayState = {
@@ -37,55 +35,20 @@ function displayUrl(url: string): string {
 export function mountPostPanel(): void {
   const draft = $("draft") as HTMLTextAreaElement;
   const count = $("count");
-  const log = $("agent-log");
-  const form = $("agent-form") as HTMLFormElement;
-  const ask = $("agent-ask") as HTMLInputElement;
-  const reviewBtn = $("review") as HTMLButtonElement;
   const payBtn = $("get-quote") as HTMLButtonElement;
   const quoteRoot = $("quote-root");
 
-  const messages: ChatMessage[] = [{ role: "agent", text: GREETING }];
-  let thinking = false;
-  let reviewTimer = 0;
   let pollTimer = 0;
   let state: PayState | null = null;
   let copied: string | null = null;
   let receive = defaultReceive();
   let posted: PostedPair[] = [];
-
-  function renderChat(): void {
-    log.replaceChildren();
-    for (const msg of messages) {
-      const row = document.createElement("div");
-      row.className = `msg msg-${msg.role}`;
-      const who = document.createElement("span");
-      who.className = "msg-who";
-      who.textContent = msg.role === "agent" ? "OpenXPost" : "You";
-      const body = document.createElement("p");
-      body.textContent = msg.text;
-      row.append(who, body);
-      log.append(row);
-    }
-    if (thinking) {
-      const row = document.createElement("div");
-      row.className = "thinking";
-      row.setAttribute("aria-live", "polite");
-      const label = document.createElement("span");
-      label.textContent = "Thinking";
-      const bar = document.createElement("span");
-      bar.className = "thinking-bar";
-      bar.append(document.createElement("span"));
-      row.append(label, bar);
-      log.append(row);
-    }
-    log.scrollTop = log.scrollHeight;
-  }
+  let payError: string | null = null;
 
   function setDraftLocked(locked: boolean): void {
     draft.readOnly = locked;
     draft.classList.toggle("is-locked", locked);
-    reviewBtn.disabled = locked || thinking;
-    payBtn.disabled = locked || thinking || !isDraftClean(draft.value);
+    payBtn.disabled = locked || !isDraftClean(draft.value);
   }
 
   function updateCount(): void {
@@ -93,27 +56,8 @@ export function mountPostPanel(): void {
     count.textContent = `${n} / ${MAX_CHARS}`;
     count.classList.toggle("is-hot", n > MAX_CHARS - 20);
     if (!state) {
-      payBtn.disabled = thinking || !isDraftClean(draft.value);
+      payBtn.disabled = !isDraftClean(draft.value);
     }
-  }
-
-  async function withThink<T>(work: () => T | Promise<T>): Promise<T> {
-    thinking = true;
-    setDraftLocked(Boolean(state));
-    renderChat();
-    await new Promise((r) => window.setTimeout(r, THINK_MS));
-    try {
-      return await work();
-    } finally {
-      thinking = false;
-      setDraftLocked(Boolean(state));
-      renderChat();
-    }
-  }
-
-  function push(role: ChatRole, text: string): void {
-    messages.push({ role, text });
-    renderChat();
   }
 
   function stopPoll(): void {
@@ -134,43 +78,38 @@ export function mountPostPanel(): void {
     kicker.textContent = "Pay";
     card.append(kicker);
 
-    const payTo = state?.invoice.receivePubkey ?? receive;
-    const amountUi = state?.invoice.amountUi ?? null;
-
-    const amount = document.createElement("p");
-    amount.className = "quote-amount";
-    amount.textContent = amountUi ? `${amountUi} ${TOKEN_TICKER}` : "Unique amount";
-    card.append(amount);
-
-    const meta = document.createElement("p");
-    meta.className = "muted";
-    if (!state) {
-      meta.textContent =
-        `Get a unique amount. Send exactly that ${TOKEN_TICKER} amount to the receive wallet. Those tokens are burned after they land.`;
-    } else {
-      meta.textContent =
-        state.phase === "posted"
-          ? "Posted"
-          : state.phase === "posting"
-            ? "Posting"
-            : state.phase === "error"
-              ? "Needs retry"
-              : `Send exactly ${state.invoice.amountUi} ${TOKEN_TICKER}`;
+    if (payError && !state) {
+      const err = document.createElement("p");
+      err.className = "notice";
+      err.textContent = payError;
+      card.append(err);
+      quoteRoot.append(card);
+      renderPosted(quoteRoot);
+      return;
     }
-    card.append(meta);
 
-    const dl = document.createElement("dl");
-    dl.className = "quote-dl";
-    if (amountUi) addRow(dl, "Amount", amountUi);
-    addRow(dl, "Receive", payTo);
-    if (state) addRow(dl, "Mint", state.invoice.mint);
-    card.append(dl);
+    if (!state) {
+      const meta = document.createElement("p");
+      meta.className = "muted";
+      meta.textContent = `Draft the post, then get a unique ${TOKEN_TICKER} amount.`;
+      card.append(meta);
+      quoteRoot.append(card);
+      renderPosted(quoteRoot);
+      return;
+    }
+
+    const amountUi = state.invoice.amountUi;
+    const payTo = state.invoice.receivePubkey || receive;
+    const line = document.createElement("p");
+    line.className = "quote-amount";
+    line.textContent = `send ${amountUi} ${TOKEN_TICKER} to ${payTo}`;
+    card.append(line);
 
     const actions = document.createElement("div");
     actions.className = "quote-actions";
-    if (amountUi) actions.append(copyButton("Copy amount", "amount", amountUi));
+    actions.append(copyButton("Copy amount", "amount", amountUi));
     actions.append(copyButton("Copy address", "receive", payTo));
-    if (state?.phase === "error" && !state.tweetUrl) {
+    if (state.phase === "error" && !state.tweetUrl) {
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "btn btn-primary";
@@ -182,8 +121,8 @@ export function mountPostPanel(): void {
     }
     card.append(actions);
 
-    const burnSig = state?.paid?.burnSignature ?? null;
-    if (state && (state.tweetUrl || burnSig)) {
+    const burnSig = state.paid?.burnSignature ?? null;
+    if (state.tweetUrl || burnSig || state.postError) {
       card.append(renderPair(state.tweetUrl, burnSig, state.postError));
     }
 
@@ -274,14 +213,6 @@ export function mountPostPanel(): void {
     return link;
   }
 
-  function addRow(dl: HTMLDListElement, key: string, value: string): void {
-    const dt = document.createElement("dt");
-    dt.textContent = key;
-    const dd = document.createElement("dd");
-    dd.textContent = value;
-    dl.append(dt, dd);
-  }
-
   function copyButton(label: string, key: string, value: string, ghost = false): HTMLButtonElement {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -334,11 +265,9 @@ export function mountPostPanel(): void {
           paidAt: state.paid.paidAt,
         });
       }
-      push("agent", "Posted. Tweet and burn are paired on this page — not in the tweet.");
       await refreshBoard();
     } else {
       state = { ...state, phase: "error", postError: result.error };
-      push("agent", result.error);
     }
     renderQuote();
   }
@@ -352,7 +281,6 @@ export function mountPostPanel(): void {
         if (!paid || !state) return;
         stopPoll();
         state = { ...state, paid, phase: "posting" };
-        push("agent", "Payment landed and burned. Posting on X.");
         renderQuote();
         await tweet();
       })();
@@ -375,40 +303,38 @@ export function mountPostPanel(): void {
     if (state) return;
     const hits = checkDraft(draft.value);
     if (hits.length > 0) {
-      await withThink(() => push("agent", hits.map((h) => h.message).join(" ")));
+      payError = hits.map((h) => h.message).join(" ");
+      renderQuote();
       return;
     }
-    await withThink(async () => {
-      try {
-        const postText = draft.value.trim();
-        const orderId = newOrderId();
-        const invoice = await createInvoice({
-          orderId,
-          postText,
-          postTextHash: await postTextHash(postText),
-        });
-        receive = invoice.receivePubkey || receive;
-        state = {
-          draft: postText,
-          orderId,
-          invoice,
-          paid: null,
-          tweetUrl: null,
-          postError: null,
-          phase: "waiting",
-        };
-        setDraftLocked(true);
-        push(
-          "agent",
-          `Send exactly ${invoice.amountUi} ${TOKEN_TICKER} to the receive wallet. Copy amount and address. Those tokens are burned after they land.`,
-        );
-      } catch (error) {
-        push("agent", error instanceof Error ? error.message : "Could not create invoice.");
-      }
-    });
+    payBtn.disabled = true;
+    try {
+      const postText = draft.value.trim();
+      const orderId = newOrderId();
+      const invoice = await createInvoice({
+        orderId,
+        postText,
+        postTextHash: await postTextHash(postText),
+      });
+      receive = invoice.receivePubkey || receive;
+      payError = null;
+      state = {
+        draft: postText,
+        orderId,
+        invoice,
+        paid: null,
+        tweetUrl: null,
+        postError: null,
+        phase: "waiting",
+      };
+      setDraftLocked(true);
+    } catch (error) {
+      payError = error instanceof Error ? error.message : "Could not create invoice.";
+    }
     renderQuote();
     updateCount();
     if (state) startPoll();
+    else payBtn.disabled = !isDraftClean(draft.value);
   }
 
   payBtn.textContent = "Get amount";
@@ -416,38 +342,20 @@ export function mountPostPanel(): void {
     void startPay();
   });
 
-  reviewBtn.addEventListener("click", () => {
-    void withThink(() => {
-      push("you", "Review this.");
-      push("agent", reviewDraft(draft.value));
-    });
-  });
-
   draft.addEventListener("input", () => {
     updateCount();
-    window.clearTimeout(reviewTimer);
-    if (state) return;
-    reviewTimer = window.setTimeout(() => {
+    if (!state) {
       const hits = checkDraft(draft.value);
       if (draft.value.trim() && hits.length > 0) {
-        push("agent", hits.map((h) => h.message).join(" "));
+        payError = hits.map((h) => h.message).join(" ");
+      } else {
+        payError = null;
       }
-    }, 900);
-  });
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const q = ask.value.trim();
-    if (!q || thinking) return;
-    ask.value = "";
-    push("you", q);
-    void withThink(() => {
-      push("agent", answer(q, draft.value));
-    });
+      renderQuote();
+    }
   });
 
   updateCount();
-  renderChat();
   renderQuote();
   setDraftLocked(false);
   void refreshBoard();

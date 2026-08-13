@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json"
+    "typecheck": "node scripts/assert-invoice-isolates.mjs && tsc --noEmit && tsc --noEmit -p tsconfig.server.json"
   },
   "devDependencies": {
     "@types/node": "^22.16.5",
@@ -17,11 +17,7 @@
   "dependencies": {
     "@netlify/blobs": "^9.1.2",
     "@solana/spl-token": "^0.4.15",
-    "@solana/wallet-adapter-base": "^0.9.27",
-    "@solana/wallet-adapter-phantom": "^0.9.29",
-    "@solana/wallet-adapter-solflare": "^0.6.33",
-    "@solana/web3.js": "^1.98.4",
-    "buffer": "^6.0.3"
+    "@solana/web3.js": "^1.98.4"
   },
   "engines": {
     "node": ">=20"

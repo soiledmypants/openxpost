@@ -1,48 +1,9 @@
 import { statusUrl, type PostTweetResponse } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
-import { invoiceStatus, loadInvoice } from "./invoice";
+import { asObject, readJson, serveJson } from "./http";
+import { loadInvoice } from "./invoice";
 import { getStore } from "./store";
 import { postTweetText } from "./x";
-
-function asObject(body: unknown): Record<string, unknown> {
-  if (body !== null && typeof body === "object" && !Array.isArray(body)) {
-    return body as Record<string, unknown>;
-  }
-  return {};
-}
-
-export async function handleInvoice(method: string, url: URL, body: unknown): Promise<{
-  status: number;
-  body: unknown;
-}> {
-  if (method === "POST") {
-    const raw = asObject(body);
-    const orderId = typeof raw.orderId === "string" ? raw.orderId : "";
-    const postText = typeof raw.postText === "string" ? raw.postText : "";
-    const postTextHash = typeof raw.postTextHash === "string" ? raw.postTextHash : "";
-    try {
-      const { createInvoice } = await import("./invoice");
-      const invoice = await createInvoice({ orderId, postText, postTextHash });
-      return { status: 200, body: invoice };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not create invoice.";
-      return { status: 400, body: { error: message } };
-    }
-  }
-
-  if (method === "GET") {
-    const id = url.searchParams.get("id")?.trim() ?? "";
-    if (!id) {
-      const { publicBoard } = await import("./invoice");
-      return { status: 200, body: await publicBoard() };
-    }
-    const status = await invoiceStatus(id);
-    if (!status) return { status: 404, body: { error: "Unknown invoice." } };
-    return { status: 200, body: { ...status.invoice, paid: status.paid } };
-  }
-
-  return { status: 405, body: { error: "GET or POST only." } };
-}
 
 export async function handlePost(body: unknown): Promise<{ status: number; body: PostTweetResponse }> {
   const invoiceId = String(asObject(body).invoiceId ?? "").trim();
@@ -58,6 +19,7 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
     return { status: 200, body: { ok: true, tweetId: record.tweetId, tweetUrl: record.tweetUrl } };
   }
 
+  const { invoiceStatus } = await import("./status");
   const status = await invoiceStatus(invoiceId);
   const paid = status?.paid;
   if (!paid) {
@@ -98,4 +60,13 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
     await (await getStore()).putInvoice({ ...record, lastError: message });
     return { status: 502, body: { ok: false, error: message, retry: true } };
   }
+}
+
+export async function servePost(req: Request): Promise<Response> {
+  return serveJson(async () => {
+    if (req.method !== "POST") {
+      return { status: 405, body: { ok: false, error: "POST only." } };
+    }
+    return handlePost(await readJson(req));
+  });
 }
