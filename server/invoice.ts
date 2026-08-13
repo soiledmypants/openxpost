@@ -1,16 +1,15 @@
-import { BASE_AMOUNT_RAW } from "../pay/amount";
 import { postTextHash } from "../pay/hash";
 import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } from "../pay/types";
 import { statusUrl } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
-import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
+import { amountRaw, amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
 import { isHiddenTestPost } from "./hidden-test-posts";
 import { getStore, type StoredInvoice } from "./store";
 
 /** Create/store only. Do not import onchain, web3, spl-token, or wallet adapters. */
 
 export function publicInvoice(record: StoredInvoice): InvoiceCreated {
-  const amountRaw = record.amountRaw?.trim() || BASE_AMOUNT_RAW.toString();
+  const amountRawValue = record.amountRaw?.trim() || amountRaw();
   return {
     invoiceId: record.invoiceId,
     orderId: record.orderId,
@@ -19,7 +18,7 @@ export function publicInvoice(record: StoredInvoice): InvoiceCreated {
     amountTokens: typeof record.amountTokens === "number" && record.amountTokens > 0
       ? record.amountTokens
       : baseAmountTokens(),
-    amountRaw,
+    amountRaw: amountRawValue,
     fromPubkey: record.fromPubkey ?? record.expectedPayer ?? "",
   };
 }
@@ -68,7 +67,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     receivePubkey: receivePubkey(),
     mint: tokenMint(),
     amountTokens: baseAmountTokens(),
-    amountRaw: BASE_AMOUNT_RAW.toString(),
+    amountRaw: amountRaw(),
     createdAt: Date.now(),
   };
   try {

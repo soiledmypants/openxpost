@@ -1,5 +1,5 @@
 import "./polyfill";
-import { shortenMint, tokenMint } from "./config";
+import { receivePubkey, shortenMint, tokenMint } from "./config";
 import { mountDocs } from "./docs/mount";
 import { copyText } from "./lib/dom";
 import { mountPostPanel } from "./post-panel";
@@ -12,6 +12,15 @@ function bindNav(): void {
   };
   onScroll();
   window.addEventListener("scroll", onScroll, { passive: true });
+}
+
+function mountHowPayAddress(): void {
+  const dest = receivePubkey();
+  const el = document.getElementById("how-pay-address");
+  if (el) {
+    el.textContent = `To ${dest}`;
+    el.title = dest;
+  }
 }
 
 function mountCa(): void {
@@ -39,4 +48,5 @@ function mountCa(): void {
 mountPostPanel();
 mountDocs();
 bindNav();
+mountHowPayAddress();
 mountCa();

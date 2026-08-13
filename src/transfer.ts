@@ -5,8 +5,8 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import { BASE_AMOUNT_RAW, TOKEN_DECIMALS } from "../pay/amount";
-import { receivePubkey, solanaRpc, tokenMint } from "./config";
+import { TOKEN_DECIMALS } from "../pay/amount";
+import { amountRaw, receivePubkey, solanaRpc, tokenMint } from "./config";
 import { signAndSend, walletPublicKey } from "./wallet";
 
 type PrefetchedPay = {
@@ -48,7 +48,7 @@ function transferIx(ready: PrefetchedPay, payer: PublicKey): Transaction {
       ready.mint,
       ready.destAta,
       payer,
-      BASE_AMOUNT_RAW,
+      amountRaw(),
       TOKEN_DECIMALS,
       [],
       ready.programId,

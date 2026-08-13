@@ -1,13 +1,19 @@
 export const DEFAULT_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 
-/** Payment mint. Override with VITE_TOKEN_MINT / TOKEN_MINT. Ticker is $POST. */
+/**
+ * Payment mint. Quiet CA slot on the site AND the mint required for the
+ * 100,000 $POST transfer / amountRaw match. Override with VITE_TOKEN_MINT / TOKEN_MINT.
+ */
 export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump";
 
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
 
-/** Fixed treasury. Copyable Pay address on the site. Public key only. */
-export const DEFAULT_RECEIVE_PUBKEY = "8MSPPTBff7jamWFQHQUjTMmt24Yv9LdWBpm3sizjziup";
+/**
+ * Treasury / copyable Pay address. Public key only.
+ * Override with VITE_TREASURY_ADDRESS / TREASURY_ADDRESS.
+ */
+export const DEFAULT_RECEIVE_PUBKEY = "NBQhuKpHq4M6wmGmgAhZKt4yCJ1JqxY7h8Cf3SM2mMQ";
 
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
 

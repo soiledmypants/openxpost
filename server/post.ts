@@ -1,8 +1,7 @@
-import { BASE_AMOUNT_RAW } from "../pay/amount";
 import { postTextHash } from "../pay/hash";
 import { statusUrl, type PostTweetResponse } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
-import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
+import { amountRaw, amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
 import { loadInvoice, paidFromRecord } from "./invoice";
 import { silentReject } from "./reject";
 import { getStore, type StoredInvoice } from "./store";
@@ -43,7 +42,7 @@ async function recordFromPaidBody(
     receivePubkey: receivePubkey(),
     mint: tokenMint(),
     amountTokens: baseAmountTokens(),
-    amountRaw: BASE_AMOUNT_RAW.toString(),
+    amountRaw: amountRaw(),
     createdAt: Date.now(),
     txSig,
     payer: fromPubkey || "paid",

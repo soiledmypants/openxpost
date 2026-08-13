@@ -15,6 +15,23 @@ import {
   statusUrl,
 } from "./types";
 
+function envTrim(value: string | undefined): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function configuredReceive(): string {
+  return envTrim(import.meta.env.VITE_TREASURY_ADDRESS) || DEFAULT_RECEIVE_PUBKEY;
+}
+
+function configuredMint(): string {
+  return envTrim(import.meta.env.VITE_TOKEN_MINT) || DEFAULT_TOKEN_MINT;
+}
+
+function configuredAmount(): number {
+  const n = Number(envTrim(import.meta.env.VITE_TOKEN_AMOUNT));
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -126,22 +143,22 @@ export async function loadBoard(): Promise<PublicBoard> {
     const rec = status === 200 ? asRecord(body) : null;
     if (!rec) {
       return {
-        receivePubkey: DEFAULT_RECEIVE_PUBKEY,
-        mint: DEFAULT_TOKEN_MINT,
-        amountTokens: DEFAULT_AMOUNT_TOKENS,
+        receivePubkey: configuredReceive(),
+        mint: configuredMint(),
+        amountTokens: configuredAmount(),
         posted: [],
       };
     }
     const receivePubkey =
       typeof rec.receivePubkey === "string" && rec.receivePubkey.trim()
         ? rec.receivePubkey.trim()
-        : DEFAULT_RECEIVE_PUBKEY;
+        : configuredReceive();
     const mint =
-      typeof rec.mint === "string" && rec.mint.trim() ? rec.mint.trim() : DEFAULT_TOKEN_MINT;
+      typeof rec.mint === "string" && rec.mint.trim() ? rec.mint.trim() : configuredMint();
     const amountTokens =
       typeof rec.amountTokens === "number" && Number.isFinite(rec.amountTokens) && rec.amountTokens > 0
         ? rec.amountTokens
-        : DEFAULT_AMOUNT_TOKENS;
+        : configuredAmount();
     const posted: PostedPair[] = [];
     if (Array.isArray(rec.posted)) {
       for (const rawItem of rec.posted) {
@@ -177,9 +194,9 @@ export async function loadBoard(): Promise<PublicBoard> {
     return { receivePubkey, mint, amountTokens, posted };
   } catch {
     return {
-      receivePubkey: DEFAULT_RECEIVE_PUBKEY,
-      mint: DEFAULT_TOKEN_MINT,
-      amountTokens: DEFAULT_AMOUNT_TOKENS,
+      receivePubkey: configuredReceive(),
+      mint: configuredMint(),
+      amountTokens: configuredAmount(),
       posted: [],
     };
   }
