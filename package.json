@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build",
+    "build": "node scripts/assert-post-isolates.mjs && tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json",
+    "assert-post": "node scripts/assert-post-isolates.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.16.5",

@@ -8,9 +8,9 @@ Not a For You slot. An open microphone on our account: [@OpenXPost](https://x.co
 
 Connect a wallet. `createInvoice({ orderId, postText, postTextHash, fromPubkey })` stores the draft bound to that pubkey and returns `{ invoiceId, orderId, mint, amountTokens, amountRaw, receivePubkey, fromPubkey }`. `amountTokens` is always `100000`. `amountRaw` is `100000000000` (6 decimals). `receivePubkey` is the fixed treasury. Sign exactly 100,000 $POST from that pubkey to the treasury. `invoice.paid` includes `txSig`, `payer`, `amountTokens`, `mint`.
 
-Payment token is $POST. Default mint: `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` (`VITE_TOKEN_MINT`). Receive: `2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ`. Do not commit secrets.
+Payment token is $POST. Default mint: `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` (`VITE_TOKEN_MINT`). Receive: `8MSPPTBff7jamWFQHQUjTMmt24Yv9LdWBpm3sizjziup`. Do not commit secrets. Do not store a private key.
 
-POST `/api/invoice` does not load `@solana/web3.js`. Wallet adapter and the transfer are client-side. On-chain match lives in a separate Netlify function. Matching is the exact 100,000 $POST transfer from the connected pubkey to the treasury.
+POST `/api/invoice` and POST `/api/post` do not load `@solana/web3.js`. Wallet adapter and the transfer are client-side. A client `txSig` is paid. On-chain match lives in a separate Netlify function if needed.
 
 ## Site
 
