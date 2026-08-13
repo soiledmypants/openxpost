@@ -40,7 +40,7 @@ const cases: Expect[] = [
   { text: "see https://example.com", ok: true },
   { text: "https://x.com/OpenXPost and t.co/abc", ok: true },
   { text: "guaranteed 100x buy now", ok: true },
-  { text: "CA: CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump buy $WIF", ok: true },
+  { text: "CA: So11111111111111111111111111111111111111112 buy $WIF", ok: true },
 
   { text: "", ok: false, id: "empty", message: "Write the post first." },
   { text: "   ", ok: false, id: "empty", message: "Write the post first." },
