@@ -496,6 +496,15 @@ a {
   color: var(--fg);
 }
 
+.pay-address {
+  margin: 0;
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  word-break: break-all;
+}
+
 .quote-actions {
   display: flex;
   flex-wrap: wrap;
@@ -538,29 +547,6 @@ a {
   padding: 0 10px;
 }
 
-.posted {
-  margin-top: 28px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
-}
-
-.posted-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 12px 16px;
-  align-items: baseline;
-  padding: 12px 0;
-  border-top: 1px solid var(--line);
-}
-
-.posted time {
-  color: var(--faint);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
 .posts-section {
   max-width: 800px;
 }
@@ -593,14 +579,6 @@ a {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px 16px;
-}
-
-.posts-meta time {
-  color: var(--faint);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
 }
 
 .status-url {
@@ -868,8 +846,7 @@ a {
   .panel-grid,
   .rules,
   .docs-shell,
-  .pair,
-  .posted-row {
+  .pair {
     grid-template-columns: 1fr;
   }
 

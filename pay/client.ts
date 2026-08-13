@@ -156,7 +156,7 @@ export async function loadBoard(): Promise<PublicBoard> {
         const txSig = typeof item.txSig === "string" ? item.txSig.trim() : "";
         const paidAt = typeof item.paidAt === "string" ? item.paidAt.trim() : "";
         const invoiceId = typeof item.invoiceId === "string" ? item.invoiceId.trim() : "";
-        if (!tweetUrl || !txSig) continue;
+        if (!tweetUrl || !txSig || !tweetText) continue;
         posted.push({
           invoiceId,
           tweetUrl,

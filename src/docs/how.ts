@@ -23,7 +23,7 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: "Treasury",
     paragraphs: [
-      `The 100,000 $POST stay in the treasury wallet ${DEFAULT_RECEIVE_PUBKEY}. That is the payment. invoice.paid includes txSig, payer, amountTokens, and mint. No per-pay burn. The server does not ask for or store a private key.`,
+      `Pay address (public key only): ${DEFAULT_RECEIVE_PUBKEY}. The 100,000 $POST stay in that treasury. That is the payment. invoice.paid includes txSig, payer, amountTokens, and mint. No per-pay burn. The server does not ask for or store a private key.`,
     ],
   },
   {
