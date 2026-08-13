@@ -1,6 +1,6 @@
 import { createInvoice, newOrderId, postPaidTweet, postTextHash, readPaid } from "../pay";
 import type { InvoiceCreated, InvoicePaid } from "../pay/types";
-import { TOKEN_TICKER, TREASURY_NOT_SET, treasuryAddress } from "./config";
+import { TOKEN_TICKER, treasuryAddress } from "./config";
 import { answer, GREETING, reviewDraft, type ChatMessage, type ChatRole } from "./lib/agent";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
@@ -156,10 +156,7 @@ export function mountPostPanel(): void {
     const actions = document.createElement("div");
     actions.className = "quote-actions";
     if (amountUi) actions.append(copyButton("Copy amount", "amount", amountUi));
-    const payTo = treasury();
-    if (payTo && payTo !== TREASURY_NOT_SET) {
-      actions.append(copyButton("Copy treasury", "treasury", payTo));
-    }
+    actions.append(copyButton("Copy treasury", "treasury", treasury()));
     if (state?.tweetUrl) {
       actions.append(copyButton("Copy status", "status", state.tweetUrl));
     }

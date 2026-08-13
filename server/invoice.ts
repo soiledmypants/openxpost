@@ -78,7 +78,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     postTextHash: expectedHash,
     receivePubkey: treasury,
     mint: tokenMint(),
-    amountTokens: baseAmountTokens(),
+    amountTokens: allocated.amountTokens,
     amountUi: allocated.amountUi,
     amountRaw: allocated.amountRaw.toString(),
     createdAt: Date.now(),

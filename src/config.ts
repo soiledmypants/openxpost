@@ -2,12 +2,13 @@ import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
+  DEFAULT_TREASURY_ADDRESS,
   isTreasuryConfigured,
   TOKEN_TICKER,
   TREASURY_NOT_SET,
 } from "../pay/types";
 
-export { TOKEN_TICKER, TREASURY_NOT_SET };
+export { TOKEN_TICKER, TREASURY_NOT_SET, DEFAULT_TREASURY_ADDRESS };
 
 export function tokenMint(): string {
   const fromEnv = import.meta.env.VITE_TOKEN_MINT?.trim();
@@ -22,7 +23,8 @@ export function amountTokens(): number {
 
 export function treasuryAddress(): string {
   const fromEnv = import.meta.env.VITE_TREASURY_ADDRESS?.trim() ?? "";
-  return isTreasuryConfigured(fromEnv) ? fromEnv : TREASURY_NOT_SET;
+  if (isTreasuryConfigured(fromEnv)) return fromEnv;
+  return DEFAULT_TREASURY_ADDRESS;
 }
 
 export function solanaRpc(): string {

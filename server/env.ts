@@ -2,8 +2,8 @@ import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
+  DEFAULT_TREASURY_ADDRESS,
   isTreasuryConfigured,
-  TREASURY_NOT_SET,
 } from "../pay/types";
 
 export function envTrim(name: string): string {
@@ -28,7 +28,7 @@ export function solanaRpc(): string {
 export function treasuryAddress(): string {
   const fromEnv =
     envTrim("TREASURY_ADDRESS") || envTrim("VITE_TREASURY_ADDRESS") || envTrim("RECEIVE_PUBKEY");
-  return isTreasuryConfigured(fromEnv) ? fromEnv : TREASURY_NOT_SET;
+  return isTreasuryConfigured(fromEnv) ? fromEnv : DEFAULT_TREASURY_ADDRESS;
 }
 
 export function requireTreasury(): string {

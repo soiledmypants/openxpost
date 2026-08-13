@@ -1,4 +1,4 @@
-import { DEFAULT_AMOUNT_TOKENS, TOKEN_TICKER } from "../../pay/types";
+import { DEFAULT_AMOUNT_TOKENS, EXAMPLE_AMOUNT_UI, TOKEN_TICKER } from "../../pay/types";
 
 const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 
@@ -16,7 +16,7 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: `Unique ${TOKEN_TICKER} amount, one treasury`,
     paragraphs: [
-      `The price is about ${PRICE} ${TOKEN_TICKER} plus a unique 6-decimal suffix (for example 100482.722913). Copy the full string — do not round. Send exactly that amount to the treasury. No wallet connect on this site.`,
+      `The price is about ${PRICE} ${TOKEN_TICKER} plus a unique 6-decimal suffix (for example ${EXAMPLE_AMOUNT_UI}). Copy the full string — do not round. Send exactly that amount to the treasury. No wallet connect on this site.`,
       `Pay returns invoiceId, receivePubkey (the treasury), mint, amountUi, and amountRaw. Payment token is ${TOKEN_TICKER}. Exact transfer of amountRaw into the treasury ATA identifies the order.`,
     ],
   },

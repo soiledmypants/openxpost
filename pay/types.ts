@@ -6,10 +6,17 @@ export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump"
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
 
-/** Public placeholder when VITE_TREASURY_ADDRESS is unset. Do not invent a wallet. */
+/** Locked treasury. Default for VITE_TREASURY_ADDRESS / TREASURY_ADDRESS. */
+export const DEFAULT_TREASURY_ADDRESS = "2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ";
+
+/** Public placeholder only if the locked default is overridden to empty. */
 export const TREASURY_NOT_SET = "TREASURY_NOT_SET";
 
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
+
+/** Example unique quote: amountTokens "100482.722913", raw 100482722913. */
+export const EXAMPLE_AMOUNT_UI = "100482.722913";
+export const EXAMPLE_AMOUNT_RAW = "100482722913";
 
 export function isTreasuryConfigured(treasury: string): boolean {
   const value = treasury.trim();
