@@ -7,7 +7,6 @@ export type StoredInvoice = {
   postText: string;
   postTextHash: string;
   receivePubkey: string;
-  secretKey: string;
   mint: string;
   amountTokens: number;
   createdAt: number;
@@ -19,6 +18,8 @@ export type StoredInvoice = {
   tweetId?: string;
   tweetUrl?: string;
   lastError?: string;
+  /** @deprecated Legacy per-invoice secrets. Never persist. */
+  secretKey?: string;
 };
 
 export type OauthRecord = {
@@ -30,16 +31,24 @@ export type OauthRecord = {
 export type Store = {
   putInvoice(record: StoredInvoice): Promise<void>;
   getInvoice(invoiceId: string): Promise<StoredInvoice | null>;
+  listInvoices(): Promise<StoredInvoice[]>;
   getOauth(): Promise<OauthRecord | null>;
   putOauth(record: OauthRecord): Promise<void>;
 };
 
 const FILE = join(process.cwd(), ".data", "openxpost.json");
+const INDEX_KEY = "inv-index";
 
 type FileShape = {
   invoices?: Record<string, StoredInvoice>;
   oauth?: OauthRecord;
 };
+
+function persistable(record: StoredInvoice): StoredInvoice {
+  const copy: StoredInvoice = { ...record };
+  delete copy.secretKey;
+  return copy;
+}
 
 async function readFileStore(): Promise<FileShape> {
   try {
@@ -61,12 +70,16 @@ function fileStore(): Store {
       const data = await readFileStore();
       await writeFileStore({
         ...data,
-        invoices: { ...data.invoices, [record.invoiceId]: record },
+        invoices: { ...data.invoices, [record.invoiceId]: persistable(record) },
       });
     },
     async getInvoice(invoiceId) {
       const data = await readFileStore();
       return data.invoices?.[invoiceId] ?? null;
+    },
+    async listInvoices() {
+      const data = await readFileStore();
+      return Object.values(data.invoices ?? {});
     },
     async getOauth() {
       const data = await readFileStore();
@@ -79,16 +92,57 @@ function fileStore(): Store {
   };
 }
 
-function blobStore(raw: {
+type BlobRaw = {
   get: (key: string, opts: { type: "json" }) => Promise<unknown>;
   setJSON: (key: string, value: unknown) => Promise<unknown>;
-}): Store {
+  list?: (opts?: { prefix?: string }) => Promise<{ blobs?: { key: string }[] }>;
+};
+
+function asIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function blobStore(raw: BlobRaw): Store {
+  async function readIndex(): Promise<string[]> {
+    return asIdList(await raw.get(INDEX_KEY, { type: "json" }));
+  }
+
+  async function listedIds(): Promise<string[]> {
+    const ids = new Set<string>(await readIndex());
+    if (typeof raw.list === "function") {
+      try {
+        const result = await raw.list({ prefix: "inv:" });
+        for (const blob of result.blobs ?? []) {
+          if (blob.key.startsWith("inv:")) ids.add(blob.key.slice(4));
+        }
+      } catch {
+        // Index is enough when list is unavailable.
+      }
+    }
+    return [...ids];
+  }
+
   return {
     async putInvoice(record) {
-      await raw.setJSON(`inv:${record.invoiceId}`, record);
+      const saved = persistable(record);
+      await raw.setJSON(`inv:${record.invoiceId}`, saved);
+      const index = await readIndex();
+      if (!index.includes(record.invoiceId)) {
+        await raw.setJSON(INDEX_KEY, [...index, record.invoiceId]);
+      }
     },
     async getInvoice(invoiceId) {
       return ((await raw.get(`inv:${invoiceId}`, { type: "json" })) as StoredInvoice | null) ?? null;
+    },
+    async listInvoices() {
+      const ids = await listedIds();
+      const records = await Promise.all(
+        ids.map(async (id) => {
+          return ((await raw.get(`inv:${id}`, { type: "json" })) as StoredInvoice | null) ?? null;
+        }),
+      );
+      return records.filter((record): record is StoredInvoice => record !== null);
     },
     async getOauth() {
       return ((await raw.get("oauth:x", { type: "json" })) as OauthRecord | null) ?? null;

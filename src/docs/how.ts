@@ -16,14 +16,14 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: `${PRICE} tokens, wallet connect`,
     paragraphs: [
-      `The price is ${PRICE} tokens, not $1 of SOL. Connect Phantom, Solflare, or another standard Solana wallet. You sign a transfer of exactly ${PRICE} tokens to a fresh receive address for that order.`,
-      `Mint and amount are configurable. The test mint is ROOTS. Pay returns invoiceId, receivePubkey, mint, and amountTokens: ${DEFAULT_AMOUNT_TOKENS}.`,
+      `The price is ${PRICE} tokens, not $1 of SOL. Connect Phantom, Solflare, or another standard Solana wallet. You sign a transfer of exactly ${PRICE} tokens to the receive wallet.`,
+      `Mint, amount, and receive wallet are fixed for this test. The mint is ROOTS. Pay returns invoiceId, receivePubkey, mint, and amountTokens: ${DEFAULT_AMOUNT_TOKENS}.`,
     ],
   },
   {
     title: "Burn",
     paragraphs: [
-      `After those ${PRICE} tokens land, they are burned. They are not kept. invoice.paid includes amountTokens, mint, and burnSignature.`,
+      `After those ${PRICE} tokens land, they are burned. They are not kept. invoice.paid includes amountTokens, mint, and burnSignature. The site shows the tweet next to that burn.`,
     ],
   },
   {
@@ -37,7 +37,7 @@ export const HOW_SECTIONS: HowSection[] = [
     title: "Post on X",
     paragraphs: [
       "After paid, the server re-filters the draft, then posts with the official X API: POST /2/tweets, body { \"text\": \"...\" } only. OAuth 2.0 user context for @OpenXPost. No tokens in the browser.",
-      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id}. It is never written into the tweet. If X fails after payment, retry the post. Do not pay again.",
+      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id}, paired with the burn transaction. It is never written into the tweet. If X fails after payment, retry the post. Do not pay again.",
     ],
   },
   {

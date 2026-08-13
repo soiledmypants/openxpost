@@ -1,5 +1,6 @@
 import {
   DEFAULT_AMOUNT_TOKENS,
+  DEFAULT_RECEIVE_PUBKEY,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
 } from "../pay/types";
@@ -21,6 +22,10 @@ export function amountTokens(): number {
 
 export function solanaRpc(): string {
   return envTrim("SOLANA_RPC") || envTrim("VITE_SOLANA_RPC") || DEFAULT_SOLANA_RPC;
+}
+
+export function receivePubkey(): string {
+  return envTrim("RECEIVE_PUBKEY") || DEFAULT_RECEIVE_PUBKEY;
 }
 
 export function requireXAuth(): {

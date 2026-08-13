@@ -33,7 +33,7 @@ export function answer(question: string, draft: string): string {
     return reviewDraft(draft);
   }
   if (/(how|what).*(pay|token|amount|invoice)/.test(q) || q.includes("wallet")) {
-    return `Connect Phantom or Solflare. Sign a transfer of exactly ${price()} tokens to the invoice receive address. Those tokens are burned after they land.`;
+    return `Connect Phantom or Solflare. Sign a transfer of exactly ${price()} tokens to the receive wallet. Those tokens are burned after they land.`;
   }
   if (/(burn|flywheel)/.test(q)) {
     return `After the ${price()} tokens land, Pay burns them. They are not kept. That is the flywheel.`;
@@ -45,7 +45,7 @@ export function answer(question: string, draft: string): string {
     return "No other coins, CAs, wallets, or shills in the tweet. No URLs in the tweet. One post per payment.";
   }
   if (/(link|status|tweet url|where)/.test(q)) {
-    return "If it posts, the status link is returned here. It is never written into the tweet.";
+    return "If it posts, the status link is returned here next to the burn transaction. It is never written into the tweet.";
   }
   return reviewDraft(draft);
 }

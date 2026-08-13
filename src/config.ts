@@ -1,5 +1,6 @@
 import {
   DEFAULT_AMOUNT_TOKENS,
+  DEFAULT_RECEIVE_PUBKEY,
   DEFAULT_SOLANA_RPC,
   DEFAULT_TOKEN_MINT,
 } from "../pay/types";
@@ -7,6 +8,10 @@ import {
 export function tokenMint(): string {
   const fromEnv = import.meta.env.VITE_TOKEN_MINT?.trim();
   return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_TOKEN_MINT;
+}
+
+export function receivePubkey(): string {
+  return DEFAULT_RECEIVE_PUBKEY;
 }
 
 export function amountTokens(): number {

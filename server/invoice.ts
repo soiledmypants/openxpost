@@ -1,8 +1,7 @@
-import { Keypair } from "@solana/web3.js";
 import { postTextHash } from "../pay/hash";
-import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid } from "../pay/types";
+import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
-import { amountTokens, tokenMint } from "./env";
+import { amountTokens, receivePubkey, tokenMint } from "./env";
 import { settleInvoice } from "./onchain";
 import { getStore, type StoredInvoice } from "./store";
 
@@ -47,14 +46,12 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     throw new Error("orderId is required.");
   }
 
-  const kp = Keypair.generate();
   const record: StoredInvoice = {
     invoiceId: crypto.randomUUID(),
     orderId: input.orderId.trim(),
     postText,
     postTextHash: expectedHash,
-    receivePubkey: kp.publicKey.toBase58(),
-    secretKey: Buffer.from(kp.secretKey).toString("base64"),
+    receivePubkey: receivePubkey(),
     mint: tokenMint(),
     amountTokens: amountTokens(),
     createdAt: Date.now(),
@@ -65,6 +62,26 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
 
 export async function loadInvoice(invoiceId: string): Promise<StoredInvoice | null> {
   return (await getStore()).getInvoice(invoiceId);
+}
+
+export async function publicBoard(): Promise<PublicBoard> {
+  const invoices = await (await getStore()).listInvoices();
+  const posted = invoices
+    .filter((row) => Boolean(row.tweetUrl && row.burnSignature && row.paidAt))
+    .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "") || b.createdAt - a.createdAt)
+    .map((row) => ({
+      invoiceId: row.invoiceId,
+      tweetUrl: row.tweetUrl ?? "",
+      burnSignature: row.burnSignature ?? "",
+      paidAt: row.paidAt ?? "",
+    }))
+    .filter((row) => row.tweetUrl && row.burnSignature);
+  return {
+    receivePubkey: receivePubkey(),
+    mint: tokenMint(),
+    amountTokens: amountTokens(),
+    posted,
+  };
 }
 
 export async function invoiceStatus(invoiceId: string): Promise<{
