@@ -15,6 +15,7 @@ import {
   type ParsedTransactionWithMeta,
 } from "@solana/web3.js";
 import type { InvoicePaid } from "../pay/types";
+import { MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
 import { envTrim, solanaRpc } from "./env";
 import { getStore, type StoredInvoice } from "./store";
 
@@ -130,7 +131,7 @@ function readTransfer(
     const parsed = ix.parsed;
     if (!parsed || typeof parsed !== "object") continue;
     const type = (parsed as { type?: string }).type;
-    if (type !== "transfer" && type !== "transferChecked") continue;
+    if (type !== "transferChecked" && type !== "transfer") continue;
     const info = (parsed as { info?: Record<string, unknown> }).info;
     if (!info) continue;
     const destination = String(info.destination ?? "");
@@ -170,13 +171,22 @@ type MatchedTransfer = {
   txSig: string;
   payer: string;
   slot: number;
+  blockTimeMs: number;
 };
+
+function inMatchWindow(blockTimeMs: number, createdAt: number, now: number): boolean {
+  const start = createdAt - MATCH_SKEW_MS;
+  const end = Math.min(now, createdAt + MATCH_WINDOW_MS);
+  return blockTimeMs >= start && blockTimeMs <= end;
+}
 
 async function matchingTransfers(
   conn: Connection,
   ata: PublicKey,
   mint: string,
   rawAmount: bigint,
+  createdAt: number,
+  now: number,
 ): Promise<MatchedTransfer[]> {
   const found: MatchedTransfer[] = [];
   let before: string | undefined;
@@ -188,13 +198,20 @@ async function matchingTransfers(
     if (sigs.length === 0) break;
     for (const info of sigs) {
       if (info.err) continue;
+      const blockTimeMs = (info.blockTime ?? 0) * 1000;
+      if (blockTimeMs && !inMatchWindow(blockTimeMs, createdAt, now)) continue;
       const tx = await conn.getParsedTransaction(info.signature, {
         maxSupportedTransactionVersion: 0,
       });
       if (!tx) continue;
       const hit = readTransfer(tx, mint, ata.toBase58(), rawAmount);
       if (!hit) continue;
-      found.push({ txSig: info.signature, payer: hit.payer, slot: tx.slot });
+      found.push({
+        txSig: info.signature,
+        payer: hit.payer,
+        slot: tx.slot,
+        blockTimeMs: blockTimeMs || (tx.blockTime ? tx.blockTime * 1000 : createdAt),
+      });
     }
     const last = sigs[sigs.length - 1];
     if (!last || sigs.length < SIG_PAGE) break;
@@ -273,7 +290,9 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
   const programId = await tokenProgramOf(conn, mint);
   const ata = await getAssociatedTokenAddress(mint, owner, false, programId);
   const mintInfo = await getMint(conn, mint, "confirmed", programId);
-  const rawAmount = BigInt(invoice.amountTokens) * 10n ** BigInt(mintInfo.decimals);
+  const rawAmount =
+    parseAmountRaw(invoice.amountRaw ?? "") ??
+    BigInt(Math.round(invoice.amountTokens * 10 ** mintInfo.decimals));
 
   const store = await getStore();
   const listed = await store.listInvoices();
@@ -294,17 +313,22 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
   let slot = merged.slot ?? 0;
 
   if (!txSig) {
-    const open = [...byId.values()]
-      .filter((row) => !row.txSig)
-      .sort((a, b) => a.createdAt - b.createdAt || a.invoiceId.localeCompare(b.invoiceId));
-    const index = open.findIndex((row) => row.invoiceId === merged.invoiceId);
-    if (index < 0) return null;
-
-    const matches = await matchingTransfers(conn, ata, invoice.mint, rawAmount);
+    const now = Date.now();
+    const matches = await matchingTransfers(
+      conn,
+      ata,
+      invoice.mint,
+      rawAmount,
+      merged.createdAt,
+      now,
+    );
     const unmatched = matches.filter((row) => !usedTx.has(row.txSig));
-    const hit = unmatched[index];
+    const sameAmount = [...byId.values()]
+      .filter((row) => !row.txSig && (row.amountRaw ?? "") === (merged.amountRaw ?? ""))
+      .sort((a, b) => a.createdAt - b.createdAt || a.invoiceId.localeCompare(b.invoiceId));
+    const index = sameAmount.findIndex((row) => row.invoiceId === merged.invoiceId);
+    const hit = unmatched[index < 0 ? 0 : index];
     if (!hit) return null;
-
     if ([...byId.values()].some((row) => row.txSig === hit.txSig)) return null;
     txSig = hit.txSig;
     payer = hit.payer;

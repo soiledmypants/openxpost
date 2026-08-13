@@ -1,3 +1,4 @@
+export { allocateAmountRaw, formatAmountUi, isAmountUi } from "./amount";
 export { createInvoice, loadBoard, postPaidTweet, readPaid } from "./client";
 export { newOrderId, postTextHash } from "./hash";
 export {

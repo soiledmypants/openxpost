@@ -6,6 +6,7 @@ import type {
   PostTweetResponse,
   PublicBoard,
 } from "./types";
+import { isAmountUi, parseAmountRaw } from "./amount";
 import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_RECEIVE_PUBKEY,
@@ -20,19 +21,44 @@ async function parseJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 /** Calls Pay. Returns the locked createInvoice shape. Extra keys are ignored. */
 export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceCreated> {
-  const body = await parseJson<InvoiceCreated & { error?: string }>("/api/invoice", {
+  const body = await parseJson<{
+    invoiceId?: string;
+    receivePubkey?: string;
+    mint?: string;
+    amountTokens?: number;
+    amountUi?: string;
+    amountRaw?: string | number;
+    error?: string;
+  }>("/api/invoice", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
   });
-  if (!body.invoiceId || !body.receivePubkey || !body.mint || !body.amountTokens) {
+  const amountUi = typeof body.amountUi === "string" ? body.amountUi.trim() : "";
+  const amountRawRaw = body.amountRaw;
+  const amountRaw =
+    typeof amountRawRaw === "string"
+      ? amountRawRaw.trim()
+      : typeof amountRawRaw === "number" && Number.isFinite(amountRawRaw)
+        ? String(Math.trunc(amountRawRaw))
+        : "";
+  if (
+    !body.invoiceId ||
+    !body.receivePubkey ||
+    !body.mint ||
+    !isAmountUi(amountUi) ||
+    !parseAmountRaw(amountRaw)
+  ) {
     throw new Error(body.error ?? "Pay did not return an invoice.");
   }
+  const amountTokens = Number(body.amountTokens);
   return {
     invoiceId: body.invoiceId,
     receivePubkey: body.receivePubkey,
     mint: body.mint,
-    amountTokens: Number(body.amountTokens),
+    amountTokens: Number.isFinite(amountTokens) ? amountTokens : Number(amountUi),
+    amountUi,
+    amountRaw,
   };
 }
 

@@ -24,6 +24,8 @@ export type InvoiceCreated = {
   receivePubkey: string;
   mint: string;
   amountTokens: number;
+  amountUi: string;
+  amountRaw: string;
 };
 
 /** Locked invoice.paid fields. Reader must accept aliases. */

@@ -9,6 +9,8 @@ export type StoredInvoice = {
   receivePubkey: string;
   mint: string;
   amountTokens: number;
+  amountUi?: string;
+  amountRaw?: string;
   createdAt: number;
   txSig?: string;
   payer?: string;

@@ -1,12 +1,10 @@
 import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash, readPaid } from "../pay";
 import type { InvoiceCreated, InvoicePaid, PostedPair } from "../pay/types";
 import { solscanTxUrl } from "../pay/types";
-import { amountTokens, receivePubkey as defaultReceive } from "./config";
+import { receivePubkey as defaultReceive } from "./config";
 import { answer, GREETING, reviewDraft, type ChatMessage, type ChatRole } from "./lib/agent";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
-import { payInvoice } from "./transfer";
-import { availableWallets, connectedPubkey, connectWallet } from "./wallet";
 
 const THINK_MS = 720;
 const POLL_MS = 4000;
@@ -18,7 +16,7 @@ type PayState = {
   paid: InvoicePaid | null;
   tweetUrl: string | null;
   postError: string | null;
-  phase: "invoice" | "paying" | "burning" | "posting" | "posted" | "error";
+  phase: "waiting" | "posting" | "posted" | "error";
 };
 
 function formatTime(iso: string): string {
@@ -44,9 +42,7 @@ export function mountPostPanel(): void {
   const ask = $("agent-ask") as HTMLInputElement;
   const reviewBtn = $("review") as HTMLButtonElement;
   const payBtn = $("get-quote") as HTMLButtonElement;
-  const connectBtn = $("connect-wallet") as HTMLButtonElement | null;
   const quoteRoot = $("quote-root");
-  const walletLabel = $("wallet-label");
 
   const messages: ChatMessage[] = [{ role: "agent", text: GREETING }];
   let thinking = false;
@@ -56,8 +52,6 @@ export function mountPostPanel(): void {
   let copied: string | null = null;
   let receive = defaultReceive();
   let posted: PostedPair[] = [];
-
-  const tokens = amountTokens();
 
   function renderChat(): void {
     log.replaceChildren();
@@ -103,14 +97,6 @@ export function mountPostPanel(): void {
     }
   }
 
-  function refreshWalletLabel(): void {
-    const key = connectedPubkey();
-    walletLabel.textContent = key ? `${key.slice(0, 4)}…${key.slice(-4)}` : "Not connected";
-    if (connectBtn) {
-      connectBtn.textContent = key ? "Wallet connected" : "Connect wallet";
-    }
-  }
-
   async function withThink<T>(work: () => T | Promise<T>): Promise<T> {
     thinking = true;
     setDraftLocked(Boolean(state));
@@ -149,49 +135,41 @@ export function mountPostPanel(): void {
     card.append(kicker);
 
     const payTo = state?.invoice.receivePubkey ?? receive;
-    const amountValue = state?.invoice.amountTokens ?? tokens;
+    const amountUi = state?.invoice.amountUi ?? null;
 
     const amount = document.createElement("p");
     amount.className = "quote-amount";
-    amount.textContent = `${amountValue.toLocaleString("en-US")} tokens`;
+    amount.textContent = amountUi ? `${amountUi} ROOTS` : "Unique amount";
     card.append(amount);
 
+    const meta = document.createElement("p");
+    meta.className = "muted";
     if (!state) {
-      const p = document.createElement("p");
-      p.className = "quote-empty";
-      p.textContent =
-        "Connect Phantom or Solflare. Sign a transfer of exactly this amount. Those tokens are burned after they land.";
-      card.append(p);
+      meta.textContent =
+        "Get a unique amount. Send exactly that ROOTS amount to the receive wallet. Those tokens are burned after they land.";
     } else {
-      const meta = document.createElement("p");
-      meta.className = "muted";
       meta.textContent =
         state.phase === "posted"
           ? "Posted"
           : state.phase === "posting"
             ? "Posting"
-            : state.phase === "burning"
-              ? "Burning"
-              : state.phase === "paying"
-                ? "Waiting for signature"
-                : state.phase === "error"
-                  ? "Needs retry"
-                  : "Invoice ready";
-      card.append(meta);
+            : state.phase === "error"
+              ? "Needs retry"
+              : `Send exactly ${state.invoice.amountUi} ROOTS`;
     }
+    card.append(meta);
 
     const dl = document.createElement("dl");
     dl.className = "quote-dl";
+    if (amountUi) addRow(dl, "Amount", amountUi);
     addRow(dl, "Receive", payTo);
-    if (state) {
-      addRow(dl, "Mint", state.invoice.mint);
-      addRow(dl, "Amount", String(state.invoice.amountTokens));
-    }
+    if (state) addRow(dl, "Mint", state.invoice.mint);
     card.append(dl);
 
     const actions = document.createElement("div");
     actions.className = "quote-actions";
-    actions.append(copyButton("Copy receive", "receive", payTo));
+    if (amountUi) actions.append(copyButton("Copy amount", "amount", amountUi));
+    actions.append(copyButton("Copy address", "receive", payTo));
     if (state?.phase === "error" && !state.tweetUrl) {
       const retry = document.createElement("button");
       retry.type = "button";
@@ -388,24 +366,9 @@ export function mountPostPanel(): void {
       await tweet();
       return;
     }
-    try {
-      state = { ...state, phase: "paying", postError: null };
-      renderQuote();
-      if (!connectedPubkey()) {
-        await connectWallet();
-        refreshWalletLabel();
-      }
-      await payInvoice(state.invoice);
-      state = { ...state, phase: "burning" };
-      push("agent", "Transfer signed. Waiting for burn.");
-      renderQuote();
-      startPoll();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Wallet transfer failed.";
-      state = { ...state, phase: "error", postError: message };
-      push("agent", message);
-      renderQuote();
-    }
+    state = { ...state, phase: "waiting", postError: null };
+    renderQuote();
+    startPoll();
   }
 
   async function startPay(): Promise<void> {
@@ -417,10 +380,6 @@ export function mountPostPanel(): void {
     }
     await withThink(async () => {
       try {
-        if (!connectedPubkey()) {
-          await connectWallet();
-          refreshWalletLabel();
-        }
         const postText = draft.value.trim();
         const orderId = newOrderId();
         const invoice = await createInvoice({
@@ -436,12 +395,12 @@ export function mountPostPanel(): void {
           paid: null,
           tweetUrl: null,
           postError: null,
-          phase: "invoice",
+          phase: "waiting",
         };
         setDraftLocked(true);
         push(
           "agent",
-          `Invoice ready. Sign a transfer of ${invoice.amountTokens.toLocaleString("en-US")} tokens to the receive wallet. They will be burned after they land.`,
+          `Send exactly ${invoice.amountUi} ROOTS to the receive wallet. Copy amount and address. Those tokens are burned after they land.`,
         );
       } catch (error) {
         push("agent", error instanceof Error ? error.message : "Could not create invoice.");
@@ -449,28 +408,12 @@ export function mountPostPanel(): void {
     });
     renderQuote();
     updateCount();
-    if (state) await resume();
+    if (state) startPoll();
   }
 
-  payBtn.textContent = `Pay ${tokens.toLocaleString("en-US")}`;
+  payBtn.textContent = "Get amount";
   payBtn.addEventListener("click", () => {
     void startPay();
-  });
-
-  connectBtn?.addEventListener("click", () => {
-    void (async () => {
-      try {
-        await connectWallet();
-        const names = availableWallets()
-          .filter((w) => w.ready)
-          .map((w) => w.name)
-          .join(", ");
-        push("agent", names ? `Connected. ${names} available.` : "Wallet connected.");
-      } catch (error) {
-        push("agent", error instanceof Error ? error.message : "Could not connect.");
-      }
-      refreshWalletLabel();
-    })();
   });
 
   reviewBtn.addEventListener("click", () => {
@@ -504,7 +447,6 @@ export function mountPostPanel(): void {
   });
 
   updateCount();
-  refreshWalletLabel();
   renderChat();
   renderQuote();
   setDraftLocked(false);

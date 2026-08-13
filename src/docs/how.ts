@@ -5,7 +5,7 @@ const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `OpenXPost is an open microphone on our X account. You pay ${PRICE} tokens. Those tokens are burned. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
+  `OpenXPost is an open microphone on our X account. You pay about ${PRICE} ROOTS — a unique amount that identifies your order. Those tokens are burned. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
 
 export type HowSection = {
   title: string;
@@ -14,16 +14,16 @@ export type HowSection = {
 
 export const HOW_SECTIONS: HowSection[] = [
   {
-    title: `${PRICE} tokens, wallet connect`,
+    title: `Unique amount, same wallet`,
     paragraphs: [
-      `The price is ${PRICE} tokens, not $1 of SOL. Connect Phantom, Solflare, or another standard Solana wallet. You sign a transfer of exactly ${PRICE} tokens to the receive wallet.`,
-      `Mint, amount, and receive wallet are fixed for this test. The mint is ROOTS. Pay returns invoiceId, receivePubkey, mint, and amountTokens: ${DEFAULT_AMOUNT_TOKENS}.`,
+      `The price is ${PRICE} ROOTS plus a unique suffix, shown with 6 decimal places (for example 100482.722913). Send exactly that amount to the receive wallet. No wallet connect on this site.`,
+      `Pay returns invoiceId, receivePubkey, mint, amountUi, and amountRaw. The mint is ROOTS. Exact transfer of amountRaw within the window identifies the order.`,
     ],
   },
   {
     title: "Burn",
     paragraphs: [
-      `After those ${PRICE} tokens land, they are burned. They are not kept. invoice.paid includes amountTokens, mint, and burnSignature. The site shows the tweet next to that burn.`,
+      "After that unique amount lands, it is burned. It is not kept. invoice.paid includes amountTokens, mint, and burnSignature. The site shows the tweet next to that burn.",
     ],
   },
   {
