@@ -1,61 +1,39 @@
 import { randomUUID } from "node:crypto";
-import { bucketLamports, solUsd } from "./price.mjs";
-import { insertInvoice, usedSuffixes } from "./store.mjs";
+import { Keypair } from "@solana/web3.js";
+import { wrapSecret, wipeSecret } from "./keys.mjs";
+import { AMOUNT_TOKENS, MINT } from "./mint.mjs";
+import { insertInvoice } from "./store.mjs";
 
-function envNum(name, fallback) {
-  const n = Number(process.env[name]);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-}
-
-function pickSuffix(used, suffixMod) {
-  const free = [];
-  for (let i = 1; i < suffixMod; i++) {
-    if (!used.has(i)) free.push(i);
-  }
-  if (!free.length) throw new Error("no unused suffix in bucket");
-  return free[Math.floor(Math.random() * free.length)];
-}
-
-export async function createInvoice({ orderId }) {
-  const treasury = process.env.TREASURY_PUBKEY;
-  if (!treasury) {
-    throw new Error(
-      "TREASURY_PUBKEY is required (public address only). Never set a private key."
-    );
-  }
-
-  const amountUsd = envNum("AMOUNT_USD", 1);
-  const suffixMod = envNum("SUFFIX_MOD", 10000);
-  const windowSec = envNum("PAY_WINDOW_SEC", 900);
-
-  const usd = await solUsd();
-  const bucket = bucketLamports(usd, amountUsd, suffixMod);
-  const suffix = pickSuffix(await usedSuffixes(bucket, suffixMod), suffixMod);
-  const lamports = bucket + suffix;
-  const amountSol = (lamports / 1e9).toFixed(9);
-
-  const now = Date.now();
+export async function createInvoice({ orderId, postText, postTextHash }) {
+  if (!orderId) throw new Error("orderId required");
   const invoiceId = randomUUID();
-  const expiresAt = new Date(now + windowSec * 1000).toISOString();
-  const payUri = `solana:${treasury}?amount=${amountSol}`;
+  const kp = Keypair.generate();
+  const receivePubkey = kp.publicKey.toBase58();
 
-  await insertInvoice({
-    id: invoiceId,
-    orderId,
-    treasury,
-    lamports,
-    amountSol,
-    status: "open",
-    createdAt: new Date(now).toISOString(),
-    expiresAt,
-  });
+  await wrapSecret(invoiceId, kp.secretKey);
+  try {
+    await insertInvoice({
+      id: invoiceId,
+      orderId,
+      mint: MINT,
+      amountTokens: AMOUNT_TOKENS,
+      amountRaw: "10000000000",
+      receivePubkey,
+      postText: postText ?? "",
+      postTextHash: postTextHash ?? "",
+      status: "open",
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    await wipeSecret(invoiceId);
+    throw err;
+  }
 
   return {
     invoiceId,
-    treasury,
-    lamports,
-    amountSol,
-    expiresAt,
-    payUri,
+    orderId,
+    mint: MINT,
+    amountTokens: AMOUNT_TOKENS,
+    receivePubkey,
   };
 }

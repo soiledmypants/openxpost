@@ -4,31 +4,40 @@ import { paidEvent } from "./notify.mjs";
 const ev = paidEvent({
   id: "inv_1",
   orderId: "ord_1",
-  signature: "5sig",
+  mint: "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump",
+  fromPubkey: "From111111111111111111111111111111111111111",
+  signature: "paySig",
+  burnSignature: "burnSig",
   paidAt: "2026-01-01T00:00:00.000Z",
-  payer: "Payer1111111111111111111111111111111111111",
-  lamports: 123456789,
-  slot: 42,
+  postText: "hello",
+  postTextHash: "hash",
 });
 
 assert.deepEqual(Object.keys(ev), [
   "type",
   "invoiceId",
   "orderId",
-  "txSig",
+  "amountTokens",
+  "mint",
+  "fromPubkey",
+  "signature",
+  "burnSignature",
   "paidAt",
-  "payer",
-  "lamports",
-  "slot",
+  "postText",
+  "postTextHash",
 ]);
 assert.equal(ev.type, "invoice.paid");
 assert.equal(ev.invoiceId, "inv_1");
 assert.equal(ev.orderId, "ord_1");
-assert.equal(ev.txSig, "5sig");
+assert.equal(ev.amountTokens, 10000);
+assert.equal(ev.mint, "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump");
+assert.equal(ev.fromPubkey, "From111111111111111111111111111111111111111");
+assert.equal(ev.signature, "paySig");
+assert.equal(ev.burnSignature, "burnSig");
 assert.equal(ev.paidAt, "2026-01-01T00:00:00.000Z");
-assert.equal(ev.payer, "Payer1111111111111111111111111111111111111");
-assert.equal(ev.lamports, 123456789);
-assert.equal(ev.slot, 42);
-assert.equal("postText" in ev, false);
+assert.equal(ev.postText, "hello");
+assert.equal(ev.postTextHash, "hash");
+assert.equal("lamports" in ev, false);
+assert.equal("txSig" in ev, false);
 
 console.log("paid.test.mjs ok");

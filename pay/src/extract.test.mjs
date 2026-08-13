@@ -1,21 +1,29 @@
 import assert from "node:assert/strict";
-import { extractNativeTransfers } from "./extract.mjs";
+import { tokenInflows } from "./extract.mjs";
 
-const treasury = "Treasury111111111111111111111111111111111";
-const payer = "Payer1111111111111111111111111111111111111";
+const ata = "Ata1111111111111111111111111111111111111111";
+const amountRaw = 10000000000;
 
-const tx = {
+const transferChecked = {
   transaction: {
     message: {
       instructions: [
         {
-          program: "system",
+          program: "spl-token",
+          programId: "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
           parsed: {
-            type: "transfer",
+            type: "transferChecked",
             info: {
-              source: payer,
-              destination: treasury,
-              lamports: 12345,
+              authority: "Payer1111111111111111111111111111111111111",
+              source: "SrcAta11111111111111111111111111111111111",
+              destination: ata,
+              mint: "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump",
+              tokenAmount: {
+                amount: "10000000000",
+                decimals: 6,
+                uiAmount: 10000,
+                uiAmountString: "10000",
+              },
             },
           },
         },
@@ -25,26 +33,28 @@ const tx = {
   meta: { err: null, innerInstructions: [] },
 };
 
-const got = extractNativeTransfers(tx, treasury);
+const got = tokenInflows(transferChecked, ata, amountRaw);
 assert.equal(got.length, 1);
-assert.equal(got[0].lamports, 12345);
-assert.equal(got[0].source, payer);
-assert.equal(got[0].destination, treasury);
+assert.equal(got[0].amount, "10000000000");
+assert.equal(got[0].destination, ata);
+assert.equal(got[0].authority, "Payer1111111111111111111111111111111111111");
+assert.equal(got[0].type, "transferChecked");
 
-const inner = {
+const transfer = {
   transaction: { message: { instructions: [] } },
   meta: {
     innerInstructions: [
       {
         instructions: [
           {
-            program: "system",
+            program: "spl-token",
             parsed: {
               type: "transfer",
               info: {
-                source: payer,
-                destination: treasury,
-                lamports: 99,
+                authority: "Payer1111111111111111111111111111111111111",
+                source: "SrcAta11111111111111111111111111111111111",
+                destination: ata,
+                amount: "10000000000",
               },
             },
           },
@@ -53,31 +63,20 @@ const inner = {
     ],
   },
 };
-assert.equal(extractNativeTransfers(inner, treasury)[0].lamports, 99);
+assert.equal(tokenInflows(transfer, ata, amountRaw).length, 1);
 
-const other = {
+const wrongAmt = {
   transaction: {
     message: {
       instructions: [
         {
           program: "spl-token",
           parsed: {
-            type: "transfer",
-            info: { destination: treasury, lamports: 1 },
-          },
-        },
-        {
-          program: "system",
-          parsed: {
-            type: "createAccount",
-            info: { destination: treasury, lamports: 1 },
-          },
-        },
-        {
-          program: "system",
-          parsed: {
-            type: "transfer",
-            info: { source: payer, destination: "Other111", lamports: 99 },
+            type: "transferChecked",
+            info: {
+              destination: ata,
+              tokenAmount: { amount: "1", decimals: 6 },
+            },
           },
         },
       ],
@@ -85,6 +84,42 @@ const other = {
   },
   meta: { innerInstructions: [] },
 };
-assert.equal(extractNativeTransfers(other, treasury).length, 0);
+assert.equal(tokenInflows(wrongAmt, ata, amountRaw).length, 0);
+
+const otherDest = {
+  transaction: {
+    message: {
+      instructions: [
+        {
+          program: "spl-token",
+          parsed: {
+            type: "transfer",
+            info: { destination: "OtherAta", amount: "10000000000" },
+          },
+        },
+      ],
+    },
+  },
+  meta: { innerInstructions: [] },
+};
+assert.equal(tokenInflows(otherDest, ata, amountRaw).length, 0);
+
+const native = {
+  transaction: {
+    message: {
+      instructions: [
+        {
+          program: "system",
+          parsed: {
+            type: "transfer",
+            info: { destination: ata, lamports: 10000000000 },
+          },
+        },
+      ],
+    },
+  },
+  meta: { innerInstructions: [] },
+};
+assert.equal(tokenInflows(native, ata, amountRaw).length, 0);
 
 console.log("extract.test.mjs ok");

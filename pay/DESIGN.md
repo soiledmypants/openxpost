@@ -1,84 +1,79 @@
-# OpenXPost Pay — unique-amount SOL invoices
+# OpenXPost Pay — Token-2022 ROOTS burn loop
 
-Observe-only live mainnet watcher. No wallet connect. This process never
-asks for a private key, never signs, and never broadcasts. `DRY_RUN`
-defaults off (`DRY_RUN=1` only for local tests).
+v1 storage is JSON files under `data/` (gitignored). No postgres.
 
-The site holds `postText` by `orderId`. Do **not** put `postText` on the
-paid event. Do not rename or add paid-event keys.
+- `invoices.json` — public rows only. No secret keys.
+- `secrets.enc.json` — AES-256-GCM wrapped invoice secrets.
+- `.wrapkey` — 32-byte wrap key, mode `0600`.
+- `feepayer.key` — fee payer JSON secret array, mode `0600`.
 
-## Locked quote JSON
+This process never logs or prints secrets. `DRY_RUN` defaults off (`DRY_RUN=1` only for local tests). Live mode observes mainnet, burns, and closes. It never asks for a wallet connect.
 
-`createInvoice({ orderId })` returns exactly:
+## Mint (locked)
+
+| Field | Value |
+| --- | --- |
+| mint | `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` |
+| program | Token-2022 `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb` (detect from mint owner) |
+| decimals | 6 |
+| symbol | ROOTS |
+| amountTokens | `10000` |
+| amountRaw | `10000000000` |
+
+## Quote
+
+`createInvoice({ orderId, postText, postTextHash })`:
+
+1. `Keypair.generate()` for this invoice.
+2. Wrap `secretKey` with AES-256-GCM into `data/secrets.enc.json` using `data/.wrapkey`.
+3. Public row in `data/invoices.json` (no secrets).
+
+Return exactly:
 
 ```json
 {
   "invoiceId": "...",
-  "treasury": "...",
-  "lamports": 0,
-  "amountSol": "0.000000000",
-  "expiresAt": "2026-01-01T00:00:00.000Z",
-  "payUri": "solana:..."
+  "orderId": "...",
+  "mint": "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump",
+  "amountTokens": 10000,
+  "receivePubkey": "..."
 }
 ```
 
-`amountSol` is always 9 decimal places (`lamports / 1e9`).
+Payer sends 10,000 ROOTS to the Token-2022 ATA of `receivePubkey`.
 
-## Locked paid event
+## Watch
 
-`paidEvent()` returns exactly these keys, in this order:
+`@solana/web3.js` `Connection` at commitment `"finalized"`.
+
+1. Derive ATA (`ataFor`) using the token program taken from the mint account owner.
+2. `getSignaturesForAddress(ata)` then `getTransaction` `jsonParsed`.
+3. If `getTransaction` returns `null`, do not mark the signature seen. Skip failed txs.
+4. `tokenInflows`: `transfer` / `transferChecked` into that ATA with amount `10000000000`.
+5. Match once: unique payment signature + `status === "open"` CAS.
+
+## Burn (not a forward)
+
+On match, **do not** send tokens to a burner address. Burn in place, then close the ATA:
+
+1. `createBurnCheckedInstruction(ata, mint, owner=invoice, amount=10000000000, decimals=6)` on Token-2022.
+2. `createCloseAccountInstruction` — remaining SOL rent goes to the fee payer.
+3. Fee payer: local `data/feepayer.key` JSON secret array. Invoice keypair co-signs.
+4. Wipe the invoice secret after a successful burn.
+5. Emit once:
 
 ```json
 {
   "type": "invoice.paid",
   "invoiceId": "...",
   "orderId": "...",
-  "txSig": "...",
-  "paidAt": "2026-01-01T00:00:00.000Z",
-  "payer": "...",
-  "lamports": 0,
-  "slot": 0
+  "amountTokens": 10000,
+  "mint": "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump",
+  "fromPubkey": "...",
+  "signature": "...",
+  "burnSignature": "...",
+  "paidAt": "...",
+  "postText": "...",
+  "postTextHash": "..."
 }
 ```
-
-## Uniqueness
-
-Price: Jupiter v3 `usdPrice` for wrapped SOL
-`So11111111111111111111111111111111111111112`, CoinGecko `solana`/`usd`
-fallback.
-
-For `$AMOUNT_USD` (product default `$1`):
-
-```
-bucket = floor(floor(AMOUNT_USD * 1e9 / solUsd) / 10000) * 10000
-lamports = bucket + suffix
-```
-
-`suffix` is an unused integer in `1..9999` on that 10_000-lamport bucket
-(`SUFFIX_MOD=10000`). Open invoices uniquely occupy a `lamports` value.
-A suffix may be reused after the previous invoice is paid or past
-expiry + grace. If every suffix in the bucket is taken, quote fails.
-
-## Expiry
-
-- Pay window: 15 minutes (`PAY_WINDOW_SEC=900`). `expiresAt` is
-  `createdAt + PAY_WINDOW_SEC`.
-- Grace: 10 minutes (`GRACE_SEC=600`) so a transfer sent near expiry can
-  still finalize and match.
-- Match window: finalized `blockTime` in `[createdAt, expiresAt + grace]`.
-
-## Finalized matching
-
-`@solana/web3.js` `Connection` at commitment `"finalized"`.
-
-1. `getSignaturesForAddress(treasury)`
-2. `getTransaction(..., { encoding: "jsonParsed", commitment: "finalized" })`
-3. If `getTransaction` returns `null`, do **not** mark the signature seen
-   (RPC lag). Skip failed txs (`err` set).
-4. Extract `program === "system"` && `parsed.type === "transfer"` &&
-   `destination === treasury` (native `SystemProgram.transfer` only).
-5. Match **exact** `lamports` to an invoice with `status === "open"` (CAS).
-6. Never double-match: unique `txSig` / signature, open-status CAS.
-
-JSON file store is v1 (`src/store.mjs`, `data/` gitignored). `schema.sql`
-is the postgres shape for later.

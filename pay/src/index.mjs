@@ -28,13 +28,13 @@ function loadEnv() {
 }
 
 loadEnv();
-
 if (process.env.DRY_RUN !== "1") process.env.DRY_RUN = "0";
 
-const quote = process.argv.includes("--quote");
-if (quote) {
+if (process.argv.includes("--quote")) {
   const orderId = process.env.ORDER_ID || randomUUID();
-  const out = await createInvoice({ orderId });
+  const postText = process.env.POST_TEXT ?? "";
+  const postTextHash = process.env.POST_TEXT_HASH ?? "";
+  const out = await createInvoice({ orderId, postText, postTextHash });
   process.stdout.write(JSON.stringify(out) + "\n");
 } else {
   await watch();

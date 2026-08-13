@@ -15,7 +15,7 @@ async function load() {
 }
 
 async function save(data) {
-  await mkdir(dir, { recursive: true });
+  await mkdir(dir, { recursive: true, mode: 0o700 });
   const tmp = `${file}.${process.pid}.tmp`;
   await writeFile(tmp, JSON.stringify(data, null, 2));
   await rename(tmp, file);
@@ -23,34 +23,14 @@ async function save(data) {
 
 export async function insertInvoice(inv) {
   const data = await load();
-  const taken = data.invoices.some(
-    (row) => row.status === "open" && row.lamports === inv.lamports
-  );
-  if (taken) throw new Error("lamports collision");
   data.invoices.push(inv);
   await save(data);
   return inv;
 }
 
-export async function usedSuffixes(bucket, suffixMod) {
+export async function listOpen() {
   const data = await load();
-  const out = new Set();
-  for (const inv of data.invoices) {
-    if (inv.status !== "open") continue;
-    if (Math.floor(inv.lamports / suffixMod) * suffixMod !== bucket) continue;
-    const suffix = inv.lamports - bucket;
-    if (suffix >= 1 && suffix < suffixMod) out.add(suffix);
-  }
-  return out;
-}
-
-export async function findOpenByLamports(lamports) {
-  const data = await load();
-  return (
-    data.invoices.find(
-      (inv) => inv.status === "open" && inv.lamports === lamports
-    ) || null
-  );
+  return data.invoices.filter((inv) => inv.status === "open");
 }
 
 export async function isSeen(signature) {
@@ -66,33 +46,26 @@ export async function markSeen(signature) {
   }
 }
 
-/** CAS: only an open invoice becomes paid; signature must be unused. */
-export async function markPaid(invoiceId, { signature, paidAt, payer, slot }) {
+/** CAS: only an open invoice becomes paid; payment signature must be unused. */
+export async function markPaid(invoiceId, fields) {
   const data = await load();
-  if (data.seen.includes(signature)) return null;
+  if (fields.signature && data.seen.includes(fields.signature)) return null;
   const inv = data.invoices.find((row) => row.id === invoiceId);
   if (!inv || inv.status !== "open") return null;
-  if (data.invoices.some((row) => row.signature === signature)) return null;
+  if (
+    fields.signature &&
+    data.invoices.some((row) => row.signature === fields.signature)
+  ) {
+    return null;
+  }
   inv.status = "paid";
-  inv.signature = signature;
-  inv.paidAt = paidAt;
-  inv.payer = payer;
-  inv.slot = slot;
-  data.seen.push(signature);
+  inv.fromPubkey = fields.fromPubkey;
+  inv.signature = fields.signature;
+  inv.burnSignature = fields.burnSignature;
+  inv.paidAt = fields.paidAt;
+  if (fields.signature && !data.seen.includes(fields.signature)) {
+    data.seen.push(fields.signature);
+  }
   await save(data);
   return inv;
-}
-
-export async function expireOpen(graceSec) {
-  const data = await load();
-  const cutoff = Date.now() - graceSec * 1000;
-  let n = 0;
-  for (const inv of data.invoices) {
-    if (inv.status !== "open") continue;
-    if (Date.parse(inv.expiresAt) > cutoff) continue;
-    inv.status = "expired";
-    n++;
-  }
-  if (n) await save(data);
-  return n;
 }

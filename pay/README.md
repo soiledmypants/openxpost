@@ -1,12 +1,12 @@
 # OpenXPost Pay
 
-Unique-amount SOL invoices. No wallet connect. Live mainnet watcher is observe-only.
+Token-2022 ROOTS invoices. Price is exactly 10,000 tokens. No wallet connect.
 
-See [DESIGN.md](./DESIGN.md) for schema, uniqueness, expiry, collision rules.
+`createInvoice` mints a fresh receive keypair. The watcher observes the Token-2022 ATA at commitment `finalized`, then **burns** the tokens in place (`BurnChecked` + `CloseAccount`). It does not forward tokens to a burner address.
 
 ```
-TREASURY_PUBKEY=<public treasury> node src/index.mjs --quote
-TREASURY_PUBKEY=<public treasury> node src/index.mjs          # watch, DRY_RUN off
+SOLANA_RPC=<rpc> node src/index.mjs --quote
+SOLANA_RPC=<rpc> node src/index.mjs          # watch + burn, DRY_RUN off
 ```
 
-Never put a private key in `.env` or chat. This process cannot send SOL.
+Put the fee-payer JSON secret array at `data/feepayer.key` (gitignored). The AES wrap key is `data/.wrapkey` (mode 0600, auto-created). Never put a private key in `.env` or chat. Never print secrets.
