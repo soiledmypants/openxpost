@@ -1,7 +1,8 @@
 import { WalletReadyState, type Adapter } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
-import { PublicKey, type Transaction } from "@solana/web3.js";
+import { Connection, PublicKey, type Transaction } from "@solana/web3.js";
+import { solanaRpc } from "./config";
 
 let adapters: Adapter[] | null = null;
 let current: Adapter | null = null;
@@ -71,8 +72,6 @@ export async function signAndSend(transaction: Transaction): Promise<string> {
   if (!current?.publicKey) {
     throw new Error("Connect Phantom or Solflare first.");
   }
-  const { Connection } = await import("@solana/web3.js");
-  const { solanaRpc } = await import("./config");
   const connection = new Connection(solanaRpc(), "confirmed");
   const sig = await current.sendTransaction(transaction, connection, {
     skipPreflight: false,
