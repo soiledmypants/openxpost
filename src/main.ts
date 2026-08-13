@@ -1,5 +1,5 @@
 import "./polyfill";
-import { tokenMint } from "./config";
+import { shortenMint, tokenMint } from "./config";
 import { mountDocs } from "./docs/mount";
 import { copyText } from "./lib/dom";
 import { mountPostPanel } from "./post-panel";
@@ -18,7 +18,10 @@ function mountCa(): void {
   const mint = tokenMint();
   const code = document.getElementById("ca-mint");
   const btn = document.getElementById("ca-copy");
-  if (code) code.textContent = mint;
+  if (code) {
+    code.textContent = shortenMint(mint);
+    code.title = mint;
+  }
   btn?.addEventListener("click", () => {
     void (async () => {
       const ok = await copyText(mint);
