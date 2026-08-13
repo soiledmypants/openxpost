@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Pay about $1 in SOL to post on the OpenXPost X account. Not a For You slot. An open microphone on our account."
+    />
+    <title>OpenXPost</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip" href="#post">Skip to post</a>
+    <header class="site-header">
+      <a class="wordmark" href="#top">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#000" />
+          <rect width="32" height="32" rx="8" fill="none" stroke="rgba(255,255,255,0.2)" />
+          <path
+            d="M16 8v16M8 16h16"
+            fill="none"
+            stroke="#fff"
+            stroke-width="2.25"
+            stroke-linecap="round"
+          />
+        </svg>
+        OpenXPost
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="#how">How it works</a>
+        <a href="#rules">Rules</a>
+        <a href="#post">Post</a>
+      </nav>
+      <a class="btn btn-primary" href="#post">Post for $1</a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <h1>$1.<br />One <span class="grad">post</span>.<br />On our account.</h1>
+        <p class="lede">
+          X open-sourced For You. This is not a For You slot. It is an open microphone on the
+          OpenXPost X account.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#post">Post for $1</a>
+          <a class="btn btn-secondary" href="#how">How it works</a>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <p class="eyebrow">How it works</p>
+        <h2>Chat. Pay. Post.</h2>
+        <div class="cards">
+          <article class="card">
+            <h3>Chat</h3>
+            <p class="card-copy">Draft with the agent. It checks the rules before you pay.</p>
+            <div class="mock mock-chat">
+              <div class="mock-line">
+                <strong>OpenXPost</strong>
+                Draft the line. I check the rules.
+              </div>
+              <div class="mock-line">
+                <strong>You</strong>
+                gm. shipping in public.
+              </div>
+              <div class="thinking" aria-hidden="true">
+                <span>Thinking</span>
+                <span class="thinking-bar"><span></span></span>
+              </div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Pay</h3>
+            <p class="card-copy">
+              Unique SOL amount. Nine decimals. No wallet connect.
+            </p>
+            <div class="mock">
+              <p class="eyebrow">Exact amount</p>
+              <p class="mock-amount">~$1 + suffix</p>
+              <p class="muted">1–9999 lamports extra. Do not round.</p>
+              <p class="mock-status">Treasury · TREASURY_NOT_SET</p>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Post</h3>
+            <p class="card-copy">
+              We post on our account. The status link is returned on this site — never in the
+              tweet.
+            </p>
+            <div class="mock">
+              <p class="eyebrow">Status</p>
+              <p class="mock-amount compact">x.com/…/status/…</p>
+              <p class="mock-status">On site only. Not written into the tweet.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="rules">
+        <p class="eyebrow">Rules</p>
+        <h2>One post per payment.</h2>
+        <ul class="rules">
+          <li>
+            <strong>No other coins</strong>
+            Do not shill tokens. This is an open mic, not a board.
+          </li>
+          <li>
+            <strong>No CAs</strong>
+            No contract addresses in the tweet.
+          </li>
+          <li>
+            <strong>No wallets</strong>
+            Do not ask for funds or drop an address.
+          </li>
+          <li>
+            <strong>No shills</strong>
+            No pumps, guarantees, or “buy now.”
+          </li>
+          <li>
+            <strong>No URLs</strong>
+            No links in the tweet. The status URL comes back here.
+          </li>
+          <li>
+            <strong>One post</strong>
+            Each unique amount buys one post. Quotes last 15 minutes.
+          </li>
+        </ul>
+      </section>
+
+      <section class="section" id="post">
+        <p class="eyebrow">Post</p>
+        <h2>Write it. Quote it. Send SOL.</h2>
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Draft</h3>
+              <span id="count">0 / 280</span>
+            </div>
+            <label class="visually-hidden" for="draft">Tweet draft</label>
+            <textarea
+              id="draft"
+              maxlength="280"
+              rows="6"
+              placeholder="280 characters. No URLs, coins, CAs, wallets, or shills."
+            ></textarea>
+            <div class="row-actions">
+              <button class="btn btn-secondary" id="review" type="button">Review</button>
+              <button class="btn btn-primary" id="get-quote" type="button">Get quote</button>
+            </div>
+            <div class="agent">
+              <p class="eyebrow">Agent</p>
+              <div id="agent-log" aria-live="polite"></div>
+              <form id="agent-form">
+                <label class="visually-hidden" for="agent-ask">Ask the agent</label>
+                <input id="agent-ask" name="ask" maxlength="240" placeholder="Ask the agent" />
+                <button class="btn btn-secondary" type="submit">Send</button>
+              </form>
+            </div>
+          </div>
+          <div class="panel" id="quote-root"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <strong>OpenXPost</strong>
+        is not a For You product. You pay about $1 in SOL to post on our X account. The tweet
+        link is returned on this site.
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
