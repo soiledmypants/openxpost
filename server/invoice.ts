@@ -1,6 +1,7 @@
 import { BASE_AMOUNT_RAW } from "../pay/amount";
 import { postTextHash } from "../pay/hash";
 import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } from "../pay/types";
+import { statusUrl } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
 import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
 import { getStore, type StoredInvoice } from "./store";
@@ -89,15 +90,20 @@ export async function publicBoard(): Promise<PublicBoard> {
     invoices = [];
   }
   const posted = invoices
-    .filter((row) => Boolean(row.tweetUrl && row.txSig && row.postText && row.paidAt))
+    .filter((row) => Boolean(row.txSig && row.postText && row.paidAt && (row.tweetUrl || row.tweetId)))
     .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "") || b.createdAt - a.createdAt)
-    .map((row) => ({
-      invoiceId: row.invoiceId,
-      tweetUrl: row.tweetUrl ?? "",
-      tweetText: row.postText ?? "",
-      txSig: row.txSig ?? "",
-      paidAt: row.paidAt ?? "",
-    }))
+    .map((row) => {
+      const tweetId = row.tweetId ?? "";
+      const tweetUrl = row.tweetUrl || (tweetId ? statusUrl(tweetId) : "");
+      return {
+        invoiceId: row.invoiceId,
+        tweetId,
+        tweetUrl,
+        tweetText: row.postText ?? "",
+        txSig: row.txSig ?? "",
+        paidAt: row.paidAt ?? "",
+      };
+    })
     .filter((row) => row.tweetUrl && row.txSig && row.tweetText);
   return {
     receivePubkey: receivePubkey(),
