@@ -31,8 +31,12 @@ export function solanaRpc(): string {
   return heliusRpc() || envTrim("SOLANA_RPC") || envTrim("VITE_SOLANA_RPC") || DEFAULT_SOLANA_RPC;
 }
 
+const DEAD_RECEIVE_PUBKEY = "2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ";
+
 export function receivePubkey(): string {
-  return envTrim("RECEIVE_PUBKEY") || DEFAULT_RECEIVE_PUBKEY;
+  const fromEnv = envTrim("RECEIVE_PUBKEY");
+  if (fromEnv && fromEnv !== DEAD_RECEIVE_PUBKEY) return fromEnv;
+  return DEFAULT_RECEIVE_PUBKEY;
 }
 
 export function requireXAuth(): {

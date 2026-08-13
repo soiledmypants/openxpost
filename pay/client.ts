@@ -177,10 +177,19 @@ export async function loadBoard(): Promise<PublicBoard> {
   }
 }
 
-export async function postPaidTweet(invoiceId: string, txSig?: string): Promise<PostTweetResponse> {
+export async function postPaidTweet(input: {
+  invoiceId: string;
+  txSig: string;
+  postText: string;
+  fromPubkey: string;
+}): Promise<PostTweetResponse> {
   try {
-    const payload: { invoiceId: string; txSig?: string } = { invoiceId };
-    if (txSig && txSig.trim()) payload.txSig = txSig.trim();
+    const payload = {
+      invoiceId: input.invoiceId,
+      txSig: input.txSig.trim(),
+      postText: input.postText,
+      fromPubkey: input.fromPubkey,
+    };
     const { status, raw, body } = await readResponse("/api/post", {
       method: "POST",
       headers: { "content-type": "application/json" },

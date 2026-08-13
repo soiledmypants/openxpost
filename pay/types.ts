@@ -7,7 +7,7 @@ export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump"
 export const TOKEN_TICKER = "$POST";
 
 /** Fixed treasury. Override with RECEIVE_PUBKEY on the server. */
-export const DEFAULT_RECEIVE_PUBKEY = "2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ";
+export const DEFAULT_RECEIVE_PUBKEY = "8MSPPTBff7jamWFQHQUjTMmt24Yv9LdWBpm3sizjziup";
 
 export const DEFAULT_AMOUNT_TOKENS = 100_000;
 

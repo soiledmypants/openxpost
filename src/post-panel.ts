@@ -280,7 +280,12 @@ export function mountPostPanel(): void {
     try {
       const invoice = await ensureInvoice();
       if (!state || state.orderId !== orderId) return;
-      const result = await postPaidTweet(invoice.invoiceId, paid.txSig);
+      const result = await postPaidTweet({
+        invoiceId: invoice.invoiceId,
+        txSig: paid.txSig,
+        postText: draftText,
+        fromPubkey: state.fromPubkey,
+      });
       if (!state || state.orderId !== orderId) return;
       if (result.ok) {
         state = { ...state, invoice, phase: "posted", tweetUrl: result.tweetUrl, postError: null };
