@@ -17,8 +17,8 @@ export const HOW_SECTIONS: HowSection[] = [
   {
     title: "Connected wallet, exact amount",
     paragraphs: [
-      `Connect Phantom or Solflare. The bound identity is that pubkey plus your draft. Pay is exactly ${PRICE} ${TOKEN_TICKER} (raw 100000 × 10^6 at 6 decimals) to the treasury ${receivePubkey()}. No unique suffix amounts.`,
-      `Pay returns invoiceId, orderId, mint, amountTokens (100000), amountRaw, receivePubkey, and fromPubkey. Payment token is ${TOKEN_TICKER}. The transfer must come from the connected wallet.`,
+      `Connect Phantom or Solflare. The bound identity is that pubkey plus your draft. When a mint is set, pay is exactly ${PRICE} ${TOKEN_TICKER} (raw 100000 × 10^6 at 6 decimals) to the treasury ${receivePubkey()}. No unique suffix amounts.`,
+      `Pay returns invoiceId, orderId, mint, amountTokens (100000), amountRaw, receivePubkey, and fromPubkey. Payment token is ${TOKEN_TICKER}. Mint is VITE_TOKEN_MINT / TOKEN_MINT and is empty unless set. The transfer must come from the connected wallet.`,
     ],
   },
   {

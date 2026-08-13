@@ -11,7 +11,7 @@ export function envTrim(name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-/** Quiet CA slot and payment mint. Same value as VITE_TOKEN_MINT on the client. */
+/** Quiet CA slot and payment mint. Same value as VITE_TOKEN_MINT on the client. Empty = unset. */
 export function tokenMint(): string {
   return envTrim("TOKEN_MINT") || envTrim("VITE_TOKEN_MINT") || DEFAULT_TOKEN_MINT;
 }

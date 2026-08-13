@@ -3,8 +3,9 @@ export const DEFAULT_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 /**
  * Payment mint. Quiet CA slot on the site AND the mint required for the
  * 100,000 $POST transfer / amountRaw match. Override with VITE_TOKEN_MINT / TOKEN_MINT.
+ * Empty by default: hide the CA slot, do not render a placeholder, do not match a mint.
  */
-export const DEFAULT_TOKEN_MINT = "CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump";
+export const DEFAULT_TOKEN_MINT = "";
 
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
@@ -134,7 +135,7 @@ export function readInvoicePaid(raw: unknown): InvoicePaid | null {
   const paidAt = asString(pick(src, ["paidAt", "paid_at", "finalizedAt"]));
   const slot = asNumber(pick(src, ["slot"]));
 
-  if (!invoiceId || !orderId || !txSig || !mint || !Number.isFinite(amountTokens)) {
+  if (!invoiceId || !orderId || !txSig || !Number.isFinite(amountTokens)) {
     return null;
   }
 

@@ -100,7 +100,6 @@ function readCreated(body: unknown): InvoiceCreated | null {
     !invoiceId ||
     !orderId ||
     !receivePubkey ||
-    !mint ||
     !fromPubkey ||
     !Number.isFinite(amountTokens) ||
     !parseAmountRaw(amountRaw)
