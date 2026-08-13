@@ -83,15 +83,18 @@ export async function connectWallet(name?: string): Promise<string> {
     throw new Error("Wallet connected without a public key.");
   }
   emit();
-  void prefetchLatestBlockhash();
+  void warmupRpc();
   return key.toBase58();
 }
 
-/** Warm /api/rpc after connect so Pay's getLatestBlockhash is ready. */
-function prefetchLatestBlockhash(): Promise<void> {
-  const connection = new Connection(solanaRpc(), "confirmed");
+/**
+ * Optional warmup of POST /api/rpc after connect. Discard the result —
+ * never cache a blockhash or attach it to a later transfer.
+ */
+function warmupRpc(): Promise<void> {
+  const connection = new Connection(solanaRpc(), "processed");
   return connection
-    .getLatestBlockhash("confirmed")
+    .getLatestBlockhash("processed")
     .then(() => undefined)
     .catch(() => undefined);
 }
@@ -112,9 +115,10 @@ export async function signAndSend(transaction: Transaction): Promise<string> {
   if (!current?.publicKey) {
     throw new Error("Connect Phantom or Solflare first.");
   }
-  const connection = new Connection(solanaRpc(), "confirmed");
+  const connection = new Connection(solanaRpc(), "processed");
   const sig = await current.sendTransaction(transaction, connection, {
-    skipPreflight: false,
+    skipPreflight: true,
+    preflightCommitment: "processed",
   });
   return typeof sig === "string" ? sig : String(sig);
 }

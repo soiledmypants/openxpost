@@ -13,17 +13,30 @@ function asObject(body: unknown): Record<string, unknown> {
 }
 
 export async function handlePost(body: unknown): Promise<{ status: number; body: PostTweetResponse }> {
-  const invoiceId = String(asObject(body).invoiceId ?? "").trim();
+  const raw = asObject(body);
+  const invoiceId = String(raw.invoiceId ?? "").trim();
+  const txSig = String(raw.txSig ?? raw.signature ?? "").trim();
   if (!invoiceId) {
     return { status: 400, body: { ok: false, error: "invoiceId is required.", retry: false } };
   }
 
-  const record = await loadInvoice(invoiceId);
+  let record = await loadInvoice(invoiceId);
   if (!record) {
     return { status: 404, body: { ok: false, error: "Unknown invoice.", retry: false } };
   }
   if (record.tweetId && record.tweetUrl) {
     return { status: 200, body: { ok: true, tweetId: record.tweetId, tweetUrl: record.tweetUrl } };
+  }
+
+  if (txSig && !record.txSig) {
+    const paidAt = record.paidAt ?? new Date().toISOString();
+    record = {
+      ...record,
+      txSig,
+      payer: record.fromPubkey ?? record.payer ?? "",
+      paidAt,
+    };
+    await (await getStore()).putInvoice(record);
   }
 
   const status = await invoiceStatus(invoiceId);
@@ -33,7 +46,7 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
       status: 402,
       body: {
         ok: false,
-        error: "Invoice is not paid yet (transfer + burn). Payment is kept; retry.",
+        error: "Invoice is not paid yet. Payment is kept; retry tweet.",
         retry: true,
       },
     };
@@ -51,7 +64,6 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
       ...record,
       txSig: paid.txSig,
       payer: paid.payer,
-      burnSignature: paid.burnSignature,
       slot: paid.slot,
       paidAt: paid.paidAt,
       tweetId: posted.tweetId,

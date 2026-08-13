@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Pay 100,000 $POST to post on the OpenXPost X account. Tokens are burned. Not a For You slot."
+      content="Pay 100,000 $POST to post on the OpenXPost X account. Not a For You slot."
     />
     <title>OpenXPost</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
@@ -39,6 +39,7 @@
         <a href="#how">How it works</a>
         <a href="#rules">Rules</a>
         <a href="#post">Post</a>
+        <a href="#posts">Posts</a>
         <a href="#docs">Docs</a>
       </nav>
       <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
@@ -51,8 +52,7 @@
         <h1>100,000.<br />One <span class="grad">post</span>.<br />On our account.</h1>
         <p class="lede">
           X open-sourced For You. This is not a For You slot. It is an open microphone on the
-          OpenXPost X account. Connect a wallet. Send 100,000 $POST. We burn them. Then we
-          post.
+          OpenXPost X account. Pay 100,000 $POST. We post. See it in Posts.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#post">Post for 100,000 $POST</a>
@@ -81,19 +81,19 @@
             <div class="mock">
               <p class="eyebrow">Amount</p>
               <p class="mock-amount">100,000 $POST</p>
-              <p class="muted">Then burned. Not kept.</p>
+              <p class="muted">To treasury.</p>
               <p class="mock-status">Wallet · Phantom / Solflare</p>
             </div>
           </article>
           <article class="card">
             <h3>Post</h3>
             <p class="card-copy">
-              We post on our account. This site pairs the tweet with the burn transaction.
+              We post on @OpenXPost. See it in Posts: text, tweet link, and payment tx.
             </p>
             <div class="mock">
-              <p class="eyebrow">Posted</p>
-              <p class="mock-amount compact">tweet · burn</p>
-              <p class="mock-status">Status link and burn tx, together. Not written into the tweet.</p>
+              <p class="eyebrow">Posts</p>
+              <p class="mock-amount compact">tweet · tx</p>
+              <p class="mock-status">Newest first. Status link and Solscan, not written into the tweet.</p>
             </div>
           </article>
         </div>
@@ -124,15 +124,15 @@
             No links in the tweet. The status URL comes back here.
           </li>
           <li>
-            <strong>Burn</strong>
-            The 100,000 $POST are burned after they land. One post per payment.
+            <strong>Treasury</strong>
+            Pay 100,000 $POST to the treasury. One post per payment.
           </li>
         </ul>
       </section>
 
       <section class="section" id="post">
         <p class="eyebrow">Post</p>
-        <h2>Connect. Write. Pay 100,000 $POST.</h2>
+        <h2>Connect. Write. Pay 100,000 $POST to treasury.</h2>
         <div class="panel-grid">
           <div class="panel">
             <div class="panel-head">
@@ -158,6 +158,17 @@
       </section>
       </div>
 
+      <section class="section posts-section" id="posts" hidden>
+        <div class="docs-head">
+          <div>
+            <p class="eyebrow">Posts</p>
+            <h2>On @OpenXPost</h2>
+          </div>
+          <p id="posts-count" class="muted"></p>
+        </div>
+        <div id="posts-list" class="posts-list"></div>
+      </section>
+
       <section class="section docs-section" id="docs" hidden>
         <div class="docs-head">
           <div>
@@ -180,7 +191,7 @@
         <strong>OpenXPost</strong>
         is not a For You product.
         <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
-        You pay 100,000 $POST. They are burned. The tweet link is returned on this site.
+        You pay 100,000 $POST. We post. See it in Posts.
       </p>
       <div class="ca-slot">
         <span class="eyebrow">CA</span>

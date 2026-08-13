@@ -9,54 +9,90 @@ import { BASE_AMOUNT_RAW, TOKEN_DECIMALS } from "../pay/amount";
 import { receivePubkey, solanaRpc, tokenMint } from "./config";
 import { signAndSend, walletPublicKey } from "./wallet";
 
-/** Exactly 100,000 $POST (6 decimals, Token-2022) to the treasury. */
-export async function payFixedPost(): Promise<{
-  signature: string;
-  blockhash: string;
-  lastValidBlockHeight: number;
-}> {
-  const connection = new Connection(solanaRpc(), "confirmed");
-  const payer = walletPublicKey();
+type PrefetchedPay = {
+  payer: string;
+  mint: PublicKey;
+  dest: PublicKey;
+  srcAta: PublicKey;
+  destAta: PublicKey;
+  programId: PublicKey;
+};
+
+let prefetch: PrefetchedPay | null = null;
+
+function rpc(): Connection {
+  return new Connection(solanaRpc(), "processed");
+}
+
+async function loadPayAccounts(payer: PublicKey): Promise<PrefetchedPay> {
   const mint = new PublicKey(tokenMint());
   const dest = new PublicKey(receivePubkey());
   const programId = TOKEN_2022_PROGRAM_ID;
   const srcAta = await getAssociatedTokenAddress(mint, payer, false, programId);
   const destAta = await getAssociatedTokenAddress(mint, dest, false, programId);
+  return { payer: payer.toBase58(), mint, dest, srcAta, destAta, programId };
+}
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+function transferIx(ready: PrefetchedPay, payer: PublicKey): Transaction {
   const tx = new Transaction();
   tx.add(
-    createAssociatedTokenAccountIdempotentInstruction(payer, destAta, dest, mint, programId),
+    createAssociatedTokenAccountIdempotentInstruction(
+      payer,
+      ready.destAta,
+      ready.dest,
+      ready.mint,
+      ready.programId,
+    ),
     createTransferCheckedInstruction(
-      srcAta,
-      mint,
-      destAta,
+      ready.srcAta,
+      ready.mint,
+      ready.destAta,
       payer,
       BASE_AMOUNT_RAW,
       TOKEN_DECIMALS,
       [],
-      programId,
+      ready.programId,
     ),
   );
   tx.feePayer = payer;
-  tx.recentBlockhash = blockhash;
-  tx.lastValidBlockHeight = lastValidBlockHeight;
-  const signature = await signAndSend(tx);
-  return { signature, blockhash, lastValidBlockHeight };
+  return tx;
 }
 
-export async function confirmPaySignature(params: {
-  signature: string;
-  blockhash: string;
-  lastValidBlockHeight: number;
-}): Promise<void> {
-  const connection = new Connection(solanaRpc(), "confirmed");
-  await connection.confirmTransaction(
-    {
-      signature: params.signature,
-      blockhash: params.blockhash,
-      lastValidBlockHeight: params.lastValidBlockHeight,
-    },
-    "confirmed",
-  );
+/** Dest ATA + transfer ix after connect. Never cache a blockhash. */
+export async function prefetchPayTransfer(): Promise<void> {
+  try {
+    const payer = walletPublicKey();
+    const ready = await loadPayAccounts(payer);
+    prefetch = ready;
+    const connection = rpc();
+    void connection.getAccountInfo(ready.destAta, "processed").catch(() => undefined);
+    void connection.getLatestBlockhash("processed").then(() => undefined).catch(() => undefined);
+  } catch {
+    prefetch = null;
+  }
+}
+
+export function clearPayPrefetch(): void {
+  prefetch = null;
+}
+
+/** Exactly 100,000 $POST to the treasury. Pay path: fresh blockhash + sign. */
+export async function payFixedPost(): Promise<{ signature: string }> {
+  const payer = walletPublicKey();
+  const ready =
+    prefetch && prefetch.payer === payer.toBase58() ? prefetch : await loadPayAccounts(payer);
+  if (!prefetch || prefetch.payer !== payer.toBase58()) prefetch = ready;
+
+  const tx = transferIx(ready, payer);
+  const { blockhash } = await rpc().getLatestBlockhash("processed");
+  tx.recentBlockhash = blockhash;
+  const signature = await signAndSend(tx);
+  return { signature };
+}
+
+/** Optional background status. Never block Pay on confirmed/finalized. */
+export function watchPaySignature(signature: string): void {
+  void rpc()
+    .getSignatureStatus(signature)
+    .catch(() => undefined);
 }

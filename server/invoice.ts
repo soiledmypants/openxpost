@@ -23,7 +23,7 @@ export function publicInvoice(record: StoredInvoice): InvoiceCreated {
 }
 
 export function paidFromRecord(record: StoredInvoice): InvoicePaid | null {
-  if (!record.txSig || !record.burnSignature || !record.payer || !record.paidAt) {
+  if (!record.txSig || !record.payer || !record.paidAt) {
     return null;
   }
   return {
@@ -35,7 +35,6 @@ export function paidFromRecord(record: StoredInvoice): InvoicePaid | null {
     payer: record.payer,
     amountTokens: record.amountTokens,
     mint: record.mint,
-    burnSignature: record.burnSignature,
     slot: record.slot ?? 0,
   };
 }
@@ -90,15 +89,16 @@ export async function publicBoard(): Promise<PublicBoard> {
     invoices = [];
   }
   const posted = invoices
-    .filter((row) => Boolean(row.tweetUrl && row.burnSignature && row.paidAt))
+    .filter((row) => Boolean(row.tweetUrl && row.txSig && row.paidAt))
     .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "") || b.createdAt - a.createdAt)
     .map((row) => ({
       invoiceId: row.invoiceId,
       tweetUrl: row.tweetUrl ?? "",
-      burnSignature: row.burnSignature ?? "",
+      tweetText: row.postText ?? "",
+      txSig: row.txSig ?? "",
       paidAt: row.paidAt ?? "",
     }))
-    .filter((row) => row.tweetUrl && row.burnSignature);
+    .filter((row) => row.tweetUrl && row.txSig);
   return {
     receivePubkey: receivePubkey(),
     mint: tokenMint(),

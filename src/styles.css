@@ -561,6 +561,48 @@ a {
   white-space: nowrap;
 }
 
+.posts-section {
+  max-width: 800px;
+}
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.posts-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.posts-text {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.025em;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.posts-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+
+.posts-meta time {
+  color: var(--faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
 .status-url {
   color: var(--fg);
   word-break: break-all;

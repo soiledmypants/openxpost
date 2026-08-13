@@ -147,14 +147,21 @@ export async function loadBoard(): Promise<PublicBoard> {
         if (!rawItem || typeof rawItem !== "object") continue;
         const item = rawItem as Partial<PostedPair>;
         const tweetUrl = typeof item.tweetUrl === "string" ? item.tweetUrl.trim() : "";
-        const burnSignature = typeof item.burnSignature === "string" ? item.burnSignature.trim() : "";
+        const tweetText =
+          typeof item.tweetText === "string"
+            ? item.tweetText.trim()
+            : typeof (item as { postText?: string }).postText === "string"
+              ? String((item as { postText?: string }).postText).trim()
+              : "";
+        const txSig = typeof item.txSig === "string" ? item.txSig.trim() : "";
         const paidAt = typeof item.paidAt === "string" ? item.paidAt.trim() : "";
         const invoiceId = typeof item.invoiceId === "string" ? item.invoiceId.trim() : "";
-        if (!tweetUrl || !burnSignature) continue;
+        if (!tweetUrl || !txSig) continue;
         posted.push({
           invoiceId,
           tweetUrl,
-          burnSignature,
+          tweetText,
+          txSig,
           paidAt,
         });
       }
@@ -170,12 +177,14 @@ export async function loadBoard(): Promise<PublicBoard> {
   }
 }
 
-export async function postPaidTweet(invoiceId: string): Promise<PostTweetResponse> {
+export async function postPaidTweet(invoiceId: string, txSig?: string): Promise<PostTweetResponse> {
   try {
+    const payload: { invoiceId: string; txSig?: string } = { invoiceId };
+    if (txSig && txSig.trim()) payload.txSig = txSig.trim();
     const { status, raw, body } = await readResponse("/api/post", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ invoiceId }),
+      body: JSON.stringify(payload),
     });
     const rec = asRecord(body);
     if (rec && rec.ok === true && typeof rec.tweetId === "string" && typeof rec.tweetUrl === "string") {
