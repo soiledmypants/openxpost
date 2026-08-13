@@ -5,7 +5,7 @@ const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `OpenXPost is an open microphone on our X account. You connect a wallet and pay ${PRICE} ${TOKEN_TICKER}. Those tokens are burned. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
+  `OpenXPost is an open microphone on our X account. You connect a wallet, write a draft, and pay ${PRICE} ${TOKEN_TICKER}. Those tokens are burned. We post your text. The tweet link comes back on this site. You are not buying a For You slot.`;
 
 export type HowSection = {
   title: string;
@@ -14,22 +14,22 @@ export type HowSection = {
 
 export const HOW_SECTIONS: HowSection[] = [
   {
-    title: `Connect, then pay ${PRICE} ${TOKEN_TICKER}`,
+    title: "Connected wallet, exact amount",
     paragraphs: [
-      `Connect Phantom or Solflare. The connected pubkey is the identity. Draft text and that pubkey are bound together — that pair is what gets paid and posted.`,
-      `You sign a transfer of exactly ${PRICE} ${TOKEN_TICKER} (100000.000000, raw 100000000000, Token-2022) to the treasury. Payment token is ${TOKEN_TICKER}. Not a unique suffix. Not a rotating invoice wallet.`,
+      `Connect Phantom or Solflare. The bound identity is that pubkey plus your draft. Pay is exactly ${PRICE} ${TOKEN_TICKER} (raw 100000 × 10^6 at 6 decimals) to the treasury. No unique suffix amounts.`,
+      `Pay returns invoiceId, orderId, mint, amountTokens (100000), amountRaw, receivePubkey, and fromPubkey. Payment token is ${TOKEN_TICKER}. The transfer must come from the connected wallet.`,
     ],
   },
   {
     title: "Burn",
     paragraphs: [
-      `After that ${PRICE} ${TOKEN_TICKER} lands, it is burned. It is not kept. The site shows the tweet next to that burn when posting runs.`,
+      "After that transfer lands, it is burned. It is not kept. invoice.paid includes amountTokens, mint, and burnSignature. The site shows the tweet next to that burn.",
     ],
   },
   {
     title: "Filter",
     paragraphs: [
-      `The tweet is text only. The draft is checked before you pay, and again on the server before posting: no other tickers, no contract addresses, no wallets, no shills, no URLs. ${TOKEN_TICKER} is the payment token.`,
+      `The tweet is text only. The draft is checked as you type, and again on the server before posting: no other tickers, no contract addresses, no wallets, no shills, no URLs. ${TOKEN_TICKER} is the payment token. There is no chat.`,
       "One post per payment.",
     ],
   },
