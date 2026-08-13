@@ -9,5 +9,5 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["vite.config.ts", "vite.source.ts"]
+  "include": ["vite.config.ts", "vite.source.ts", "vite.api.ts"]
 }
