@@ -17,6 +17,8 @@ Optional public env:
 
 ## Site
 
+The Docs tab on the site is this source, bundled at build time.
+
 ```bash
 npm install
 npm run dev

@@ -1,3 +1,4 @@
+import { mountDocs } from "./docs/mount";
 import { mountPostPanel } from "./post-panel";
 import "./styles.css";
 
@@ -11,4 +12,5 @@ function bindNav(): void {
 }
 
 mountPostPanel();
+mountDocs();
 bindNav();
