@@ -1,4 +1,4 @@
-import { checkDraft, isDraftClean } from "../src/lib/rules.ts";
+import { checkDraft, isDraftClean, MAX_CHARS } from "../src/lib/rules.ts";
 
 type Expect = { text: string; ok: boolean; id?: string; message?: string };
 
@@ -10,7 +10,6 @@ const cases: Expect[] = [
   { text: "fuck this", ok: true },
   { text: "bundle of notes", ok: true },
 
-  // Hate-speech vocabulary must pass. No slur denylist.
   { text: "nigger", ok: true },
   { text: "niggers", ok: true },
   { text: "nigga", ok: true },
@@ -27,19 +26,26 @@ const cases: Expect[] = [
   { text: "nigger and $POST", ok: true },
   { text: "this is retarded nigger energy", ok: true },
 
-  { text: "bundled", ok: false, id: "abuse", message: "No bundled FUD." },
-  { text: "bundler", ok: false, id: "abuse", message: "No bundled FUD." },
-  { text: "coin is bundled", ok: false, id: "abuse", message: "No bundled FUD." },
-  { text: "this coin is ass", ok: false, id: "abuse", message: "No attacks on the coin." },
-  { text: "coin is ass", ok: false, id: "abuse", message: "No attacks on the coin." },
-  { text: "dev is an idiot", ok: false, id: "abuse", message: "No attacks on the dev." },
-  { text: "fuck the dev", ok: false, id: "abuse", message: "No attacks on the dev." },
-  { text: "stupid developer", ok: false, id: "abuse", message: "No attacks on the dev." },
-  { text: "buy $PEPE now", ok: false, id: "coin" },
-  { text: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ok: false, id: "ca" },
-  { text: "send sol to my address", ok: false, id: "wallet" },
-  { text: "see https://example.com", ok: false, id: "url" },
-  { text: "guaranteed 100x buy now", ok: false, id: "shill" },
+  { text: "bundled", ok: true },
+  { text: "bundler", ok: true },
+  { text: "coin is bundled", ok: true },
+  { text: "this coin is ass", ok: true },
+  { text: "coin is ass", ok: true },
+  { text: "dev is an idiot", ok: true },
+  { text: "fuck the dev", ok: true },
+  { text: "stupid developer", ok: true },
+  { text: "buy $PEPE now", ok: true },
+  { text: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ok: true },
+  { text: "send sol to my address", ok: true },
+  { text: "see https://example.com", ok: true },
+  { text: "https://x.com/OpenXPost and t.co/abc", ok: true },
+  { text: "guaranteed 100x buy now", ok: true },
+  { text: "CA: CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump buy $WIF", ok: true },
+
+  { text: "", ok: false, id: "empty", message: "Write the post first." },
+  { text: "   ", ok: false, id: "empty", message: "Write the post first." },
+  { text: "x".repeat(MAX_CHARS), ok: true },
+  { text: "x".repeat(MAX_CHARS + 1), ok: false, id: "length", message: `Keep it to ${MAX_CHARS} characters.` },
 ];
 
 let failed = 0;

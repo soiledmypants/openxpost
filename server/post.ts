@@ -4,6 +4,7 @@ import { statusUrl, type PostTweetResponse } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
 import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
 import { loadInvoice, paidFromRecord } from "./invoice";
+import { silentReject } from "./reject";
 import { getStore, type StoredInvoice } from "./store";
 import { postTweetText } from "./x";
 
@@ -113,6 +114,9 @@ export async function handlePost(body: unknown): Promise<{ status: number; body:
   const hits = checkDraft(record.postText);
   if (hits.length > 0) {
     return { status: 400, body: { ok: false, error: hits.map((h) => h.message).join(" "), retry: false } };
+  }
+  if (silentReject(record.postText)) {
+    return { status: 400, body: { ok: false, error: "Could not post.", retry: false } };
   }
 
   try {

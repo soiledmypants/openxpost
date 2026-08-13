@@ -4,6 +4,7 @@ import type { CreateInvoiceInput, InvoiceCreated, InvoicePaid, PublicBoard } fro
 import { statusUrl } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
 import { amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
+import { silentReject } from "./reject";
 import { getStore, type StoredInvoice } from "./store";
 
 /** Create/store only. Do not import onchain, web3, spl-token, or wallet adapters. */
@@ -46,6 +47,9 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
   const hits = checkDraft(postText);
   if (hits.length > 0) {
     throw new Error(hits.map((hit) => hit.message).join(" "));
+  }
+  if (silentReject(postText)) {
+    throw new Error("Could not create invoice.");
   }
   const expectedHash = await postTextHash(postText);
   if (input.postTextHash && input.postTextHash !== expectedHash) {
