@@ -1,3 +1,12 @@
+/**
+ * Draft filter. Blocks other tickers (except $POST), CAs, wallets, URLs,
+ * shills, bundled/bundler FUD, coin-is-ass / rug / honeypot attacks, and
+ * insults aimed at the dev.
+ *
+ * Hate-speech vocabulary is allowed. There is no slur denylist. A draft
+ * that only uses slurs or other rude language is clean unless it also
+ * matches one of the attack / promo patterns below.
+ */
 export type RuleId = "empty" | "length" | "url" | "ca" | "wallet" | "coin" | "shill" | "abuse";
 
 export type RuleHit = {
@@ -29,7 +38,8 @@ const DEV_INSULT =
   String.raw`(?:retarded|retards?|idiots?|idiotic|stupid|dumb(?:ass)?|morons?|gay|trash|garbage|ass|clowns?|faggots?|sucks?|shitty?)`;
 
 /**
- * Insults aimed at the dev. "this is retarded", "that's ass", and other rude posts pass.
+ * Insults aimed at the dev. Standalone swearing, slurs, "this is retarded",
+ * and "that's ass" pass. Only the dev-targeted patterns below fail.
  */
 const DEV_ATTACK_RE = new RegExp(
   [
