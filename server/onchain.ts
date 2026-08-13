@@ -15,7 +15,7 @@ import {
   type ParsedTransactionWithMeta,
 } from "@solana/web3.js";
 import type { InvoicePaid } from "../pay/types";
-import { amountTokensNumber, MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
+import { MATCH_SKEW_MS, MATCH_WINDOW_MS, parseAmountRaw } from "../pay/amount";
 import { envTrim, solanaRpc } from "./env";
 import { getStore, type StoredInvoice } from "./store";
 
@@ -79,7 +79,7 @@ function asPaid(invoice: StoredInvoice): InvoicePaid | null {
     txSig: invoice.txSig,
     paidAt: invoice.paidAt,
     payer: invoice.payer,
-    amountTokens: amountTokensNumber(invoice.amountTokens, invoice.amountRaw),
+    amountTokens: invoice.amountTokens,
     mint: invoice.mint,
     burnSignature: invoice.burnSignature,
     slot: invoice.slot ?? 0,
@@ -292,7 +292,7 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
   const mintInfo = await getMint(conn, mint, "confirmed", programId);
   const rawAmount =
     parseAmountRaw(invoice.amountRaw ?? "") ??
-    BigInt(Math.round(amountTokensNumber(invoice.amountTokens, invoice.amountRaw) * 10 ** mintInfo.decimals));
+    BigInt(Math.round(invoice.amountTokens * 10 ** mintInfo.decimals));
 
   const store = await getStore();
   const listed = await store.listInvoices();
@@ -322,11 +322,19 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
       merged.createdAt,
       now,
     );
-    const unmatched = matches.filter((row) => !usedTx.has(row.txSig));
-    const sameAmount = [...byId.values()]
-      .filter((row) => !row.txSig && (row.amountRaw ?? "") === (merged.amountRaw ?? ""))
+    const unmatched = matches.filter((row) => {
+      if (usedTx.has(row.txSig)) return false;
+      if (merged.fromPubkey && row.payer !== merged.fromPubkey) return false;
+      return true;
+    });
+    const sameWallet = [...byId.values()]
+      .filter((row) => {
+        if (row.txSig) return false;
+        if (merged.fromPubkey) return (row.fromPubkey ?? "") === merged.fromPubkey;
+        return (row.amountRaw ?? "") === (merged.amountRaw ?? "");
+      })
       .sort((a, b) => a.createdAt - b.createdAt || a.invoiceId.localeCompare(b.invoiceId));
-    const index = sameAmount.findIndex((row) => row.invoiceId === merged.invoiceId);
+    const index = sameWallet.findIndex((row) => row.invoiceId === merged.invoiceId);
     const hit = unmatched[index < 0 ? 0 : index];
     if (!hit) return null;
     if ([...byId.values()].some((row) => row.txSig === hit.txSig)) return null;
@@ -373,7 +381,7 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
     txSig,
     paidAt,
     payer,
-    amountTokens: amountTokensNumber(invoice.amountTokens, invoice.amountRaw),
+    amountTokens: invoice.amountTokens,
     mint: invoice.mint,
     burnSignature,
     slot,
