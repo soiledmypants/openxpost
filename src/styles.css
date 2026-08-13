@@ -251,7 +251,7 @@ a {
 
 .hero h1 {
   margin: 0;
-  max-width: 11ch;
+  max-width: 14ch;
   font-size: clamp(3rem, 8.4vw, 6.25rem);
   font-weight: 500;
   letter-spacing: -0.05em;
@@ -430,6 +430,12 @@ a {
   margin-bottom: 4px;
   color: var(--fg);
   font-weight: 500;
+}
+
+.post-lede {
+  margin: -12px 0 28px;
+  max-width: 36em;
+  font-size: 16px;
 }
 
 .panel-grid {
@@ -648,6 +654,12 @@ a {
 
 .posts-section .pin-copy {
   margin: 0 0 20px;
+}
+
+.posts-lede {
+  margin: 0 0 16px;
+  max-width: 36em;
+  font-size: 16px;
 }
 
 html.route-posts #home,
