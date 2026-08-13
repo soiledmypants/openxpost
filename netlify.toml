@@ -1,3 +1,13 @@
 [build]
   command = "npm run build"
   publish = "dist"
+
+[[redirects]]
+  from = "/api/invoice"
+  to = "/.netlify/functions/invoice"
+  status = 200
+
+[[redirects]]
+  from = "/api/post"
+  to = "/.netlify/functions/post"
+  status = 200

@@ -3,9 +3,9 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname } from "node:path";
 import type { Plugin } from "vite";
 
-const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
+const SKIP_DIRS = new Set(["node_modules", "dist", ".git", ".data", ".netlify"]);
 const SKIP_FILES = new Set(["package-lock.json"]);
-const TEXT_EXT = new Set([".ts", ".css", ".html", ".json", ".md", ".svg", ".txt", ".toml"]);
+const TEXT_EXT = new Set([".ts", ".css", ".html", ".json", ".md", ".svg", ".txt", ".toml", ".example"]);
 const TEXT_NAMES = new Set([".gitignore"]);
 
 export type SourceFile = {

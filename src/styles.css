@@ -130,6 +130,17 @@ a {
   color: var(--fg);
 }
 
+.x-handle {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  letter-spacing: -0.02em;
+}
+
+.x-handle:hover {
+  color: var(--fg);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -587,10 +598,10 @@ a {
   margin-top: 6px;
 }
 
-.status-box {
-  margin-top: 8px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+.status-url {
+  color: var(--fg);
+  word-break: break-all;
+  text-underline-offset: 3px;
 }
 
 .site-footer {
@@ -601,6 +612,42 @@ a {
   color: var(--faint);
   font-size: 13px;
   letter-spacing: -0.01em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px 28px;
+}
+
+.site-footer p {
+  margin: 0;
+  max-width: 46em;
+}
+
+.ca-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ca-slot .eyebrow {
+  margin: 0;
+}
+
+.ca-slot code {
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.wallet-label {
+  margin: 10px 0 0;
+  font-size: 13px;
 }
 
 .site-footer strong {
