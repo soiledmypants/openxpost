@@ -34,6 +34,7 @@ export type OauthRecord = {
 export type Store = {
   putInvoice(record: StoredInvoice): Promise<void>;
   getInvoice(invoiceId: string): Promise<StoredInvoice | null>;
+  deleteInvoice(invoiceId: string): Promise<void>;
   listInvoices(): Promise<StoredInvoice[]>;
   getOauth(): Promise<OauthRecord | null>;
   putOauth(record: OauthRecord): Promise<void>;
@@ -80,6 +81,13 @@ function fileStore(): Store {
       const data = await readFileStore();
       return data.invoices?.[invoiceId] ?? null;
     },
+    async deleteInvoice(invoiceId) {
+      const data = await readFileStore();
+      if (!data.invoices?.[invoiceId]) return;
+      const invoices = { ...data.invoices };
+      delete invoices[invoiceId];
+      await writeFileStore({ ...data, invoices });
+    },
     async listInvoices() {
       const data = await readFileStore();
       return Object.values(data.invoices ?? {});
@@ -98,6 +106,7 @@ function fileStore(): Store {
 type BlobRaw = {
   get: (key: string, opts: { type: "json" }) => Promise<unknown>;
   setJSON: (key: string, value: unknown) => Promise<unknown>;
+  delete?: (key: string) => Promise<unknown>;
   list?: (opts?: { prefix?: string }) => Promise<{ blobs?: { key: string }[] }>;
 };
 
@@ -137,6 +146,16 @@ function blobStore(raw: BlobRaw): Store {
     },
     async getInvoice(invoiceId) {
       return ((await raw.get(`inv:${invoiceId}`, { type: "json" })) as StoredInvoice | null) ?? null;
+    },
+    async deleteInvoice(invoiceId) {
+      if (typeof raw.delete === "function") {
+        await raw.delete(`inv:${invoiceId}`);
+      }
+      const index = await readIndex();
+      const next = index.filter((id) => id !== invoiceId);
+      if (next.length !== index.length) {
+        await raw.setJSON(INDEX_KEY, next);
+      }
     },
     async listInvoices() {
       const ids = await listedIds();

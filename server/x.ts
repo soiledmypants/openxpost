@@ -97,6 +97,20 @@ async function createTweet(accessToken: string, text: string): Promise<Response>
   });
 }
 
+async function destroyTweet(accessToken: string, tweetId: string): Promise<Response> {
+  return fetch(`${TWEET_URL}/${encodeURIComponent(tweetId)}`, {
+    method: "DELETE",
+    headers: {
+      authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+function tweetApiError(json: TweetApi, status: number): Error {
+  const fromErrors = json.errors?.map((item) => item.message).filter(Boolean).join(" ");
+  return new Error(json.detail ?? json.title ?? fromErrors ?? `X API ${status}.`);
+}
+
 export async function postTweetText(text: string): Promise<{ tweetId: string; tweetUrl: string }> {
   let token = await bearer();
   let response = await createTweet(token, text);
@@ -118,4 +132,31 @@ export async function postTweetText(text: string): Promise<{ tweetId: string; tw
     throw new Error("X API returned no tweet id. Payment is kept; retry the post.");
   }
   return { tweetId, tweetUrl: statusUrl(tweetId) };
+}
+
+/** DELETE https://api.x.com/2/tweets/:id. 404 (already gone) is success. Same OAuth as postTweetText. */
+export async function deleteTweet(tweetId: string): Promise<void> {
+  const id = tweetId.trim();
+  if (!id) {
+    throw new Error("tweetId is required.");
+  }
+
+  let token = await bearer();
+  let response = await destroyTweet(token, id);
+  if (response.status === 401) {
+    const refreshed = await refreshOauth(await loadOauth());
+    token = refreshed.accessToken;
+    response = await destroyTweet(token, id);
+  }
+  if (response.ok || response.status === 404) {
+    return;
+  }
+
+  let json: TweetApi = {};
+  try {
+    json = (await response.json()) as TweetApi;
+  } catch {
+    json = {};
+  }
+  throw tweetApiError(json, response.status);
 }
