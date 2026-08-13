@@ -20,8 +20,15 @@ export function amountTokens(): number {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_AMOUNT_TOKENS;
 }
 
+function heliusRpc(): string {
+  const raw = envTrim("HELIUS_API_KEY") || envTrim("HELIUS_RPC_URL");
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(raw)}`;
+}
+
 export function solanaRpc(): string {
-  return envTrim("SOLANA_RPC") || envTrim("VITE_SOLANA_RPC") || DEFAULT_SOLANA_RPC;
+  return heliusRpc() || envTrim("SOLANA_RPC") || envTrim("VITE_SOLANA_RPC") || DEFAULT_SOLANA_RPC;
 }
 
 export function receivePubkey(): string {
