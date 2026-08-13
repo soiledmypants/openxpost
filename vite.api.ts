@@ -3,6 +3,7 @@ import type { Plugin } from "vite";
 import handleRpc from "./netlify/functions/rpc";
 import { handleInvoice } from "./server/invoice-http";
 import { handlePost } from "./server/post";
+import { handlePurgeTestPosts } from "./server/purge-test-posts";
 import { handleInvoicePaid } from "./server/status-http";
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -23,6 +24,10 @@ function attach(use: (fn: (req: IncomingMessage, res: ServerResponse, next: () =
     const path = req.url?.split("?")[0];
     if (path === "/api/rpc") {
       void handleRpcNode(req, res);
+      return;
+    }
+    if (path === "/api/purge-test-posts") {
+      void handlePurgeNode(req, res);
       return;
     }
     if (path === "/api/post" || path === "/api/invoice") {
@@ -71,6 +76,29 @@ async function handleRpcNode(req: IncomingMessage, res: ServerResponse): Promise
       jsonrpc: "2.0",
       error: { code: -32000, message: error instanceof Error ? error.message : "RPC proxy failed." },
       id: null,
+    });
+  }
+}
+
+async function handlePurgeNode(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const write = (status: number, body: unknown): void => {
+    res.statusCode = status;
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify(body));
+  };
+  try {
+    if (req.method !== "POST") {
+      write(405, { ok: false, error: "POST only." });
+      return;
+    }
+    await readBody(req);
+    const result = await handlePurgeTestPosts();
+    write(result.status, result.body);
+  } catch (error) {
+    write(500, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Server error.",
+      retry: true,
     });
   }
 }
