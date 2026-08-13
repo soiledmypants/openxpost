@@ -322,11 +322,19 @@ export async function settleInvoice(invoice: StoredInvoice): Promise<InvoicePaid
       merged.createdAt,
       now,
     );
-    const unmatched = matches.filter((row) => !usedTx.has(row.txSig));
-    const sameAmount = [...byId.values()]
-      .filter((row) => !row.txSig && (row.amountRaw ?? "") === (merged.amountRaw ?? ""))
+    const unmatched = matches.filter((row) => {
+      if (usedTx.has(row.txSig)) return false;
+      if (merged.fromPubkey && row.payer !== merged.fromPubkey) return false;
+      return true;
+    });
+    const sameWallet = [...byId.values()]
+      .filter((row) => {
+        if (row.txSig) return false;
+        if (merged.fromPubkey) return (row.fromPubkey ?? "") === merged.fromPubkey;
+        return (row.amountRaw ?? "") === (merged.amountRaw ?? "");
+      })
       .sort((a, b) => a.createdAt - b.createdAt || a.invoiceId.localeCompare(b.invoiceId));
-    const index = sameAmount.findIndex((row) => row.invoiceId === merged.invoiceId);
+    const index = sameWallet.findIndex((row) => row.invoiceId === merged.invoiceId);
     const hit = unmatched[index < 0 ? 0 : index];
     if (!hit) return null;
     if ([...byId.values()].some((row) => row.txSig === hit.txSig)) return null;

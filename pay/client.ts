@@ -6,7 +6,7 @@ import type {
   PostTweetResponse,
   PublicBoard,
 } from "./types";
-import { allocateAmountRaw, isAmountUi, parseAmountRaw } from "./amount";
+import { BASE_AMOUNT_RAW, formatAmountUi, isAmountUi, parseAmountRaw } from "./amount";
 import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_RECEIVE_PUBKEY,
@@ -54,18 +54,17 @@ function readCreatedInvoice(body: unknown): InvoiceCreated | null {
 }
 
 function localInvoice(): InvoiceCreated {
-  const allocated = allocateAmountRaw(new Set());
   return {
     invoiceId: crypto.randomUUID(),
     receivePubkey: DEFAULT_RECEIVE_PUBKEY,
     mint: DEFAULT_TOKEN_MINT,
-    amountTokens: allocated.amountTokens,
-    amountUi: allocated.amountUi,
-    amountRaw: allocated.amountRaw.toString(),
+    amountTokens: DEFAULT_AMOUNT_TOKENS,
+    amountUi: formatAmountUi(BASE_AMOUNT_RAW),
+    amountRaw: BASE_AMOUNT_RAW.toString(),
   };
 }
 
-/** POST /api/invoice first. On error, 404, or a bad body, generate a local unique amount. Never throws. */
+/** POST /api/invoice when it works. Never blocks pay. Fixed 100,000 $POST — not a unique suffix. */
 export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceCreated> {
   try {
     const response = await fetch("/api/invoice", {
@@ -84,7 +83,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
       if (invoice) return invoice;
     }
   } catch {
-    // Static hosts and missing functions must still quote.
+    // 502 / missing function must not block the wallet transfer.
   }
   return localInvoice();
 }

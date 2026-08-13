@@ -19,6 +19,7 @@ export type CreateInvoiceInput = {
   orderId: string;
   postText: string;
   postTextHash: string;
+  fromPubkey: string;
 };
 
 /** Locked createInvoice return. Extra keys may appear; do not rename these. */

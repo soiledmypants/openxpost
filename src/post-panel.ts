@@ -1,21 +1,27 @@
-import { createInvoice, loadBoard, newOrderId, postPaidTweet, postTextHash, readPaid } from "../pay";
-import type { InvoiceCreated, InvoicePaid, PostedPair } from "../pay/types";
+import { createInvoice, loadBoard, newOrderId, postTextHash } from "../pay";
+import type { PostedPair } from "../pay/types";
 import { solscanTxUrl } from "../pay/types";
 import { receivePubkey as defaultReceive, TOKEN_TICKER } from "./config";
 import { $, copyText } from "./lib/dom";
 import { checkDraft, isDraftClean, MAX_CHARS } from "./lib/rules";
+import { confirmPaySignature, payFixedPost } from "./transfer";
+import { connectedPubkey, connectWallet, onWalletChange, shortenPubkey } from "./wallet";
 
-const POLL_MS = 4000;
+type PayPhase = "idle" | "signing" | "waiting" | "paid" | "error";
 
 type PayState = {
   draft: string;
+  fromPubkey: string;
   orderId: string;
-  invoice: InvoiceCreated;
-  paid: InvoicePaid | null;
-  tweetUrl: string | null;
+  invoiceId: string | null;
+  txSig: string | null;
   postError: string | null;
-  phase: "waiting" | "posting" | "posted" | "error";
+  phase: PayPhase;
 };
+
+function displayUrl(url: string): string {
+  return url.replace(/^https:\/\//, "");
+}
 
 function formatTime(iso: string): string {
   const date = new Date(iso);
@@ -28,23 +34,19 @@ function formatTime(iso: string): string {
   });
 }
 
-function displayUrl(url: string): string {
-  return url.replace(/^https:\/\//, "");
-}
-
 export function mountPostPanel(): void {
   const draft = $("draft") as HTMLTextAreaElement;
   const count = $("count");
-  const reviewBtn = $("review") as HTMLButtonElement;
+  const connectBtn = $("connect-wallet") as HTMLButtonElement;
   const payBtn = $("get-quote") as HTMLButtonElement;
   const quoteRoot = $("quote-root");
+  const walletLabel = $("wallet-label");
   const reviewStatus = $("review-status");
 
-  let pollTimer = 0;
   let state: PayState | null = null;
   let copied: string | null = null;
-  let receive = defaultReceive();
   let posted: PostedPair[] = [];
+  const receive = defaultReceive();
 
   function setReviewStatus(text: string, bad = false): void {
     reviewStatus.textContent = text;
@@ -62,29 +64,30 @@ export function mountPostPanel(): void {
     return true;
   }
 
-  function setDraftLocked(locked: boolean): void {
+  function paying(): boolean {
+    return Boolean(state && state.phase !== "idle" && state.phase !== "error");
+  }
+
+  function refreshWallet(): void {
+    const key = connectedPubkey();
+    walletLabel.textContent = key ? shortenPubkey(key) : "Not connected";
+    connectBtn.textContent = key ? shortenPubkey(key) : "Connect";
+    connectBtn.disabled = paying();
+    updateButtons();
+  }
+
+  function updateButtons(): void {
+    const locked = paying();
     draft.readOnly = locked;
     draft.classList.toggle("is-locked", locked);
-    reviewBtn.disabled = locked;
-    payBtn.disabled = locked || !isDraftClean(draft.value);
+    payBtn.disabled = locked || !connectedPubkey() || !isDraftClean(draft.value);
   }
 
   function updateCount(): void {
     const n = draft.value.length;
     count.textContent = `${n} / ${MAX_CHARS}`;
     count.classList.toggle("is-hot", n > MAX_CHARS - 20);
-    if (!state) {
-      payBtn.disabled = !isDraftClean(draft.value);
-    }
-  }
-
-  function stopPoll(): void {
-    window.clearInterval(pollTimer);
-    pollTimer = 0;
-  }
-
-  function upsertPosted(item: PostedPair): void {
-    posted = [item, ...posted.filter((row) => row.invoiceId !== item.invoiceId)];
+    updateButtons();
   }
 
   function renderQuote(): void {
@@ -96,111 +99,58 @@ export function mountPostPanel(): void {
     kicker.textContent = "Pay";
     card.append(kicker);
 
-    const payTo = state?.invoice.receivePubkey ?? receive;
-    const amountUi = state?.invoice.amountUi ?? null;
-
     const amount = document.createElement("p");
     amount.className = "quote-amount";
-    amount.textContent = amountUi ?? "Unique amount";
+    amount.textContent = `100,000 ${TOKEN_TICKER}`;
     card.append(amount);
 
     const meta = document.createElement("p");
     meta.className = "muted";
-    if (!state) {
-      meta.textContent =
-        `Get a unique amount. Send exactly that ${TOKEN_TICKER} amount to the receive wallet. Those tokens are burned after they land.`;
-    } else {
-      meta.textContent =
-        state.phase === "posted"
-          ? "Posted"
-          : state.phase === "posting"
-            ? "Posting"
-            : state.phase === "error"
-              ? "Needs retry"
-              : `Send exactly ${state.invoice.amountUi} ${TOKEN_TICKER}`;
+    const phase = state?.phase ?? "idle";
+    if (phase === "signing") meta.textContent = "Sign in your wallet.";
+    else if (phase === "waiting") meta.textContent = "Waiting";
+    else if (phase === "paid") meta.textContent = "Paid";
+    else if (phase === "error") meta.textContent = state?.postError || "Needs retry";
+    else {
+      meta.textContent = connectedPubkey()
+        ? `Sign exactly 100,000 ${TOKEN_TICKER} from this wallet. Those tokens are burned after they land.`
+        : `Connect Phantom or Solflare. Sign exactly 100,000 ${TOKEN_TICKER}.`;
     }
     card.append(meta);
 
     const dl = document.createElement("dl");
     dl.className = "quote-dl";
-    if (amountUi) addRow(dl, "Amount", amountUi);
-    addRow(dl, "Receive", payTo);
-    if (state) addRow(dl, "Mint", state.invoice.mint);
+    addRow(dl, "Amount", `100,000 ${TOKEN_TICKER}`);
+    addRow(dl, "Receive", receive);
+    const from = state?.fromPubkey || connectedPubkey();
+    if (from) addRow(dl, "From", from);
     card.append(dl);
 
     const actions = document.createElement("div");
     actions.className = "quote-actions";
-    if (amountUi) actions.append(copyButton("Copy amount", "amount", amountUi));
-    actions.append(copyButton("Copy address", "receive", payTo));
-    if (state?.phase === "error" && !state.tweetUrl) {
+    actions.append(copyButton("Copy address", "receive", receive));
+    if (state?.phase === "error") {
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "btn btn-primary";
       retry.textContent = "Retry";
       retry.addEventListener("click", () => {
-        void resume();
+        void startPay();
       });
       actions.append(retry);
     }
     card.append(actions);
 
-    const burnSig = state?.paid?.burnSignature ?? null;
-    if (state && (state.tweetUrl || burnSig)) {
-      card.append(renderPair(state.tweetUrl, burnSig, state.postError));
+    if (state?.txSig) {
+      const tx = document.createElement("p");
+      tx.className = "muted";
+      const href = solscanTxUrl(state.txSig);
+      tx.append(linkEl(href, displayUrl(href)));
+      card.append(tx);
     }
 
     quoteRoot.append(card);
     renderPosted(quoteRoot);
-  }
-
-  function renderPair(
-    tweetUrl: string | null,
-    burnSignature: string | null,
-    postError: string | null,
-  ): HTMLElement {
-    const pair = document.createElement("div");
-    pair.className = "pair";
-
-    const tweetCol = document.createElement("div");
-    tweetCol.className = "pair-col";
-    const tweetLabel = document.createElement("p");
-    tweetLabel.className = "eyebrow";
-    tweetLabel.textContent = "Tweet";
-    tweetCol.append(tweetLabel);
-    if (tweetUrl) {
-      tweetCol.append(linkEl(tweetUrl, displayUrl(tweetUrl)));
-      tweetCol.append(copyButton("Copy tweet", "tweet", tweetUrl, true));
-    } else if (postError) {
-      const err = document.createElement("p");
-      err.className = "muted";
-      err.textContent = postError;
-      tweetCol.append(err);
-    } else {
-      const pending = document.createElement("p");
-      pending.className = "muted";
-      pending.textContent = "Posting";
-      tweetCol.append(pending);
-    }
-
-    const burnCol = document.createElement("div");
-    burnCol.className = "pair-col";
-    const burnLabel = document.createElement("p");
-    burnLabel.className = "eyebrow";
-    burnLabel.textContent = "Burn";
-    burnCol.append(burnLabel);
-    if (burnSignature) {
-      const href = solscanTxUrl(burnSignature);
-      burnCol.append(linkEl(href, displayUrl(href)));
-      burnCol.append(copyButton("Copy burn", "burn", burnSignature, true));
-    } else {
-      const pending = document.createElement("p");
-      pending.className = "muted";
-      pending.textContent = "Waiting";
-      burnCol.append(pending);
-    }
-
-    pair.append(tweetCol, burnCol);
-    return pair;
   }
 
   function renderPosted(root: HTMLElement): void {
@@ -244,10 +194,10 @@ export function mountPostPanel(): void {
     dl.append(dt, dd);
   }
 
-  function copyButton(label: string, key: string, value: string, ghost = false): HTMLButtonElement {
+  function copyButton(label: string, key: string, value: string): HTMLButtonElement {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = ghost ? "btn btn-ghost" : "btn btn-secondary";
+    btn.className = "btn btn-secondary";
     btn.textContent = copied === key ? "Copied" : label;
     btn.addEventListener("click", () => {
       void (async () => {
@@ -265,113 +215,90 @@ export function mountPostPanel(): void {
     return btn;
   }
 
-  async function refreshBoard(): Promise<void> {
-    const board = await loadBoard();
-    receive = board.receivePubkey || defaultReceive();
-    posted = board.posted;
-    if (state?.tweetUrl && state.paid?.burnSignature) {
-      upsertPosted({
-        invoiceId: state.invoice.invoiceId,
-        tweetUrl: state.tweetUrl,
-        burnSignature: state.paid.burnSignature,
-        paidAt: state.paid.paidAt,
-      });
-    }
-    renderQuote();
-  }
-
-  async function tweet(): Promise<void> {
-    if (!state?.paid) return;
-    state = { ...state, phase: "posting", postError: null };
-    renderQuote();
-    const result = await postPaidTweet(state.invoice.invoiceId);
-    if (!state) return;
-    if (result.ok) {
-      state = { ...state, phase: "posted", tweetUrl: result.tweetUrl, postError: null };
-      if (state.paid?.burnSignature) {
-        upsertPosted({
-          invoiceId: state.invoice.invoiceId,
-          tweetUrl: result.tweetUrl,
-          burnSignature: state.paid.burnSignature,
-          paidAt: state.paid.paidAt,
-        });
-      }
-      await refreshBoard();
-    } else {
-      state = { ...state, phase: "error", postError: result.error };
-    }
-    renderQuote();
-  }
-
-  function startPoll(): void {
-    stopPoll();
-    pollTimer = window.setInterval(() => {
-      void (async () => {
-        if (!state || state.paid) return;
-        const paid = await readPaid(state.invoice.invoiceId);
-        if (!paid || !state) return;
-        stopPoll();
-        state = { ...state, paid, phase: "posting" };
-        renderQuote();
-        await tweet();
-      })();
-    }, POLL_MS);
-  }
-
-  async function resume(): Promise<void> {
-    if (!state) return;
-    if (state.tweetUrl) return;
-    if (state.paid) {
-      await tweet();
-      return;
-    }
-    state = { ...state, phase: "waiting", postError: null };
-    renderQuote();
-    startPoll();
-  }
-
   async function startPay(): Promise<void> {
-    if (state) return;
+    if (paying() && state?.phase !== "error") return;
     if (!silentRulesCheck()) return;
+    let fromPubkey = connectedPubkey();
+    if (!fromPubkey) {
+      try {
+        fromPubkey = await connectWallet();
+      } catch (error) {
+        setReviewStatus(error instanceof Error ? error.message : "Could not connect.", true);
+        refreshWallet();
+        return;
+      }
+      refreshWallet();
+    }
+    if (!fromPubkey) return;
+    if (!isDraftClean(draft.value)) return;
+
     const postText = draft.value.trim();
     const orderId = newOrderId();
-    const invoice = await createInvoice({
+    state = {
+      draft: postText,
+      fromPubkey,
+      orderId,
+      invoiceId: null,
+      txSig: null,
+      postError: null,
+      phase: "signing",
+    };
+    setReviewStatus("");
+    updateButtons();
+    renderQuote();
+
+    void createInvoice({
       orderId,
       postText,
       postTextHash: await postTextHash(postText),
+      fromPubkey,
+    }).then((invoice) => {
+      if (state && state.orderId === orderId) {
+        state = { ...state, invoiceId: invoice.invoiceId };
+      }
     });
-    receive = invoice.receivePubkey || receive;
-    state = {
-      draft: postText,
-      orderId,
-      invoice,
-      paid: null,
-      tweetUrl: null,
-      postError: null,
-      phase: "waiting",
-    };
-    setDraftLocked(true);
-    setReviewStatus("");
-    renderQuote();
-    updateCount();
-    startPoll();
+
+    try {
+      const sent = await payFixedPost();
+      if (!state || state.orderId !== orderId) return;
+      state = { ...state, txSig: sent.signature, phase: "waiting" };
+      renderQuote();
+      await confirmPaySignature(sent);
+      if (!state || state.orderId !== orderId) return;
+      state = { ...state, phase: "paid" };
+      renderQuote();
+      updateButtons();
+    } catch (error) {
+      if (!state || state.orderId !== orderId) return;
+      const message = error instanceof Error ? error.message : "Wallet transfer failed.";
+      state = { ...state, phase: "error", postError: message };
+      setReviewStatus(message, true);
+      renderQuote();
+      updateButtons();
+    }
   }
 
-  payBtn.textContent = "Get amount";
+  payBtn.textContent = `Pay 100,000 ${TOKEN_TICKER}`;
   payBtn.addEventListener("click", () => {
     void startPay();
   });
 
-  reviewBtn.addEventListener("click", () => {
-    if (silentRulesCheck()) {
-      const remaining = MAX_CHARS - draft.value.trim().length;
-      setReviewStatus(`Ready. ${remaining} characters left.`);
-    }
+  connectBtn.addEventListener("click", () => {
+    void (async () => {
+      try {
+        await connectWallet();
+        setReviewStatus("");
+      } catch (error) {
+        setReviewStatus(error instanceof Error ? error.message : "Could not connect.", true);
+      }
+      refreshWallet();
+      renderQuote();
+    })();
   });
 
   draft.addEventListener("input", () => {
     updateCount();
-    if (state) return;
+    if (paying()) return;
     if (!draft.value.trim()) {
       setReviewStatus("");
       return;
@@ -379,8 +306,16 @@ export function mountPostPanel(): void {
     silentRulesCheck();
   });
 
+  onWalletChange(() => {
+    refreshWallet();
+    renderQuote();
+  });
+
   updateCount();
+  refreshWallet();
   renderQuote();
-  setDraftLocked(false);
-  void refreshBoard();
+  void loadBoard().then((board) => {
+    posted = board.posted;
+    renderQuote();
+  });
 }

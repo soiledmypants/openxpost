@@ -1,4 +1,4 @@
-import { handleInvoice, handlePost } from "./post";
+import { handlePost } from "./post";
 
 async function readJson(req: Request): Promise<unknown> {
   const raw = await req.text();
@@ -6,9 +6,10 @@ async function readJson(req: Request): Promise<unknown> {
   return JSON.parse(raw) as unknown;
 }
 
-export async function serve(req: Request, kind: "post" | "invoice"): Promise<Response> {
+export async function serve(req: Request, kind: "post" | "invoice" = "post"): Promise<Response> {
   try {
     if (kind === "invoice") {
+      const { handleInvoice } = await import("./invoice-http");
       const result = await handleInvoice(req.method, new URL(req.url), await readJson(req));
       return Response.json(result.body, { status: result.status });
     }

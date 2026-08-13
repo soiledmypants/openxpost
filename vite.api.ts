@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
-import { handleInvoice, handlePost } from "./server/post";
+import { handleInvoice } from "./server/invoice-http";
+import { handlePost } from "./server/post";
 
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {

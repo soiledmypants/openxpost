@@ -1,12 +1,12 @@
 # OpenXPost
 
-Pay about 100,000 $POST to post on the OpenXPost X account. Each invoice is a unique amount to the same receive wallet. Those tokens are burned. The tweet link is returned on this site, paired with the burn transaction — never in the tweet.
+Pay 100,000 $POST to post on the OpenXPost X account. Connect Phantom or Solflare. Sign a transfer of exactly 100,000 $POST from that wallet to the treasury. Those tokens are burned. The tweet link is returned on this site, paired with the burn transaction — never in the tweet.
 
 Not a For You slot. An open microphone on our account: [@OpenXPost](https://x.com/OpenXPost).
 
 ## Pay
 
-`createInvoice({ orderId, postText, postTextHash })` returns `{ invoiceId, receivePubkey, mint, amountTokens, amountUi, amountRaw }`. `receivePubkey` is the live test wallet. `amountUi` is always 6 decimal places (for example `100482.722913`). Send exactly that $POST amount. After it lands, it is burned. `invoice.paid` includes `txSig`, `burnSignature`, `payer`, `amountTokens`, `mint`.
+Connect a wallet. `createInvoice({ orderId, postText, postTextHash, fromPubkey })` stores the draft bound to that pubkey. Sign exactly 100,000 $POST (raw `100000000000`, 6 decimals, Token-2022) to the treasury. After the transfer signature, the site shows waiting → paid. Burn and post can run server-side from that wallet’s 100k transfer.
 
 Payment token is $POST. Default mint: `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` (`VITE_TOKEN_MINT`). Receive: `RECEIVE_PUBKEY` (default `2qd5pRQJQcyBJFkd4P9BGeXoS1zDcwMArRgaTu2zLoMJ`). Burn signing uses server-only `RECEIVE_SECRET` or `FEE_PAYER_SECRET`. Do not commit secrets.
 

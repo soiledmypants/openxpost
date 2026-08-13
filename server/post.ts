@@ -1,6 +1,7 @@
 import { statusUrl, type PostTweetResponse } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
-import { invoiceStatus, loadInvoice } from "./invoice";
+import { loadInvoice } from "./invoice";
+import { invoiceStatus } from "./invoice-status";
 import { getStore } from "./store";
 import { postTweetText } from "./x";
 
@@ -9,39 +10,6 @@ function asObject(body: unknown): Record<string, unknown> {
     return body as Record<string, unknown>;
   }
   return {};
-}
-
-export async function handleInvoice(method: string, url: URL, body: unknown): Promise<{
-  status: number;
-  body: unknown;
-}> {
-  if (method === "POST") {
-    const raw = asObject(body);
-    const orderId = typeof raw.orderId === "string" ? raw.orderId : "";
-    const postText = typeof raw.postText === "string" ? raw.postText : "";
-    const postTextHash = typeof raw.postTextHash === "string" ? raw.postTextHash : "";
-    try {
-      const { createInvoice } = await import("./invoice");
-      const invoice = await createInvoice({ orderId, postText, postTextHash });
-      return { status: 200, body: invoice };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not create invoice.";
-      return { status: 400, body: { error: message } };
-    }
-  }
-
-  if (method === "GET") {
-    const id = url.searchParams.get("id")?.trim() ?? "";
-    if (!id) {
-      const { publicBoard } = await import("./invoice");
-      return { status: 200, body: await publicBoard() };
-    }
-    const status = await invoiceStatus(id);
-    if (!status) return { status: 404, body: { error: "Unknown invoice." } };
-    return { status: 200, body: { ...status.invoice, paid: status.paid } };
-  }
-
-  return { status: 405, body: { error: "GET or POST only." } };
 }
 
 export async function handlePost(body: unknown): Promise<{ status: number; body: PostTweetResponse }> {
