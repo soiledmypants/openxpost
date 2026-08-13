@@ -6,7 +6,7 @@ import type {
   PostTweetResponse,
   PublicBoard,
 } from "./types";
-import { isAmountUi, parseAmountRaw } from "./amount";
+import { BASE_AMOUNT_RAW, formatAmountUi, isAmountUi, parseAmountRaw } from "./amount";
 import {
   DEFAULT_AMOUNT_TOKENS,
   DEFAULT_RECEIVE_PUBKEY,
@@ -14,60 +14,19 @@ import {
   readInvoicePaid,
 } from "./types";
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
-}
-
-function errorMessage(status: number, body: unknown, raw: string): string {
-  const rec = asRecord(body);
-  const fromBody = rec
-    ? String(rec.errorMessage ?? rec.error ?? rec.message ?? rec.detail ?? "").trim()
-    : "";
-  const fromRaw = raw.trim();
-  const detail = fromBody || fromRaw || "empty body";
-  return `${status} ${detail}`;
-}
-
-async function readResponse(path: string, init?: RequestInit): Promise<{
-  status: number;
-  raw: string;
-  body: unknown;
-}> {
+async function parseJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, init);
-  const raw = await response.text();
-  let body: unknown = null;
-  if (raw) {
-    try {
-      body = JSON.parse(raw) as unknown;
-    } catch {
-      body = null;
-    }
-  }
-  return { status: response.status, raw, body };
+  return (await response.json()) as T;
 }
 
-function asAmountUi(value: unknown): string {
-  if (typeof value === "string" && isAmountUi(value)) return value.trim();
-  return "";
-}
-
-function asField(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function readCreated(body: unknown): InvoiceCreated | null {
-  const rec = asRecord(body);
-  if (!rec) return null;
-  const invoiceId = asField(rec.invoiceId);
-  const orderId = asField(rec.orderId);
-  const receivePubkey = asField(rec.receivePubkey);
-  const mint = asField(rec.mint);
-  const amountTokens = asAmountUi(rec.amountTokens) || asAmountUi(rec.amountUi);
-  const amountUi = asAmountUi(rec.amountUi) || amountTokens;
-  const amountRawRaw = rec.amountRaw;
+function readCreatedInvoice(body: unknown): InvoiceCreated | null {
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return null;
+  const raw = body as Record<string, unknown>;
+  const invoiceId = typeof raw.invoiceId === "string" ? raw.invoiceId.trim() : "";
+  const receivePubkey = typeof raw.receivePubkey === "string" ? raw.receivePubkey.trim() : "";
+  const mint = typeof raw.mint === "string" ? raw.mint.trim() : "";
+  const amountUi = typeof raw.amountUi === "string" ? raw.amountUi.trim() : "";
+  const amountRawRaw = raw.amountRaw;
   const amountRaw =
     typeof amountRawRaw === "string"
       ? amountRawRaw.trim()
@@ -76,71 +35,86 @@ function readCreated(body: unknown): InvoiceCreated | null {
         : "";
   if (
     !invoiceId ||
-    !orderId ||
     !receivePubkey ||
     !mint ||
-    !isAmountUi(amountTokens) ||
+    !isAmountUi(amountUi) ||
     !parseAmountRaw(amountRaw)
   ) {
     return null;
   }
+  const amountTokens = Number(raw.amountTokens);
   return {
     invoiceId,
-    orderId,
     receivePubkey,
     mint,
-    amountTokens,
+    amountTokens: Number.isFinite(amountTokens) ? amountTokens : Number(amountUi),
     amountUi,
     amountRaw,
   };
 }
 
-/** Calls Pay. Returns the locked createInvoice shape. Extra keys are ignored. */
+function localInvoice(): InvoiceCreated {
+  return {
+    invoiceId: crypto.randomUUID(),
+    receivePubkey: DEFAULT_RECEIVE_PUBKEY,
+    mint: DEFAULT_TOKEN_MINT,
+    amountTokens: DEFAULT_AMOUNT_TOKENS,
+    amountUi: formatAmountUi(BASE_AMOUNT_RAW),
+    amountRaw: BASE_AMOUNT_RAW.toString(),
+  };
+}
+
+/** POST /api/invoice when it works. Never blocks pay. Fixed 100,000 $POST — not a unique suffix. */
 export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceCreated> {
-  const { status, raw, body } = await readResponse("/api/invoice", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  const invoice = status === 200 ? readCreated(body) : null;
-  if (!invoice) {
-    throw new Error(errorMessage(status, body, raw));
+  try {
+    const response = await fetch("/api/invoice", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (response.ok) {
+      let body: unknown = null;
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+      const invoice = readCreatedInvoice(body);
+      if (invoice) return invoice;
+    }
+  } catch {
+    // 502 / missing function must not block the wallet transfer.
   }
-  return invoice;
+  return localInvoice();
 }
 
 export async function readPaid(invoiceId: string): Promise<InvoicePaid | null> {
-  const { body } = await readResponse(`/api/invoice?id=${encodeURIComponent(invoiceId)}`);
-  return readInvoicePaid(body);
+  try {
+    const body = await parseJson<unknown>(`/api/invoice?id=${encodeURIComponent(invoiceId)}`);
+    return readInvoicePaid(body);
+  } catch {
+    return null;
+  }
 }
 
 export async function loadBoard(): Promise<PublicBoard> {
   try {
-    const { status, body } = await readResponse("/api/invoice");
-    const rec = status === 200 ? asRecord(body) : null;
-    if (!rec) {
-      return {
-        receivePubkey: DEFAULT_RECEIVE_PUBKEY,
-        mint: DEFAULT_TOKEN_MINT,
-        amountTokens: DEFAULT_AMOUNT_TOKENS,
-        posted: [],
-      };
-    }
+    const body = await parseJson<Partial<PublicBoard> & { error?: string }>("/api/invoice");
     const receivePubkey =
-      typeof rec.receivePubkey === "string" && rec.receivePubkey.trim()
-        ? rec.receivePubkey.trim()
+      typeof body.receivePubkey === "string" && body.receivePubkey.trim()
+        ? body.receivePubkey.trim()
         : DEFAULT_RECEIVE_PUBKEY;
     const mint =
-      typeof rec.mint === "string" && rec.mint.trim() ? rec.mint.trim() : DEFAULT_TOKEN_MINT;
+      typeof body.mint === "string" && body.mint.trim() ? body.mint.trim() : DEFAULT_TOKEN_MINT;
     const amountTokens =
-      typeof rec.amountTokens === "number" && Number.isFinite(rec.amountTokens) && rec.amountTokens > 0
-        ? rec.amountTokens
+      typeof body.amountTokens === "number" && Number.isFinite(body.amountTokens) && body.amountTokens > 0
+        ? body.amountTokens
         : DEFAULT_AMOUNT_TOKENS;
     const posted: PostedPair[] = [];
-    if (Array.isArray(rec.posted)) {
-      for (const rawItem of rec.posted) {
-        if (!rawItem || typeof rawItem !== "object") continue;
-        const item = rawItem as Partial<PostedPair>;
+    if (Array.isArray(body.posted)) {
+      for (const raw of body.posted) {
+        if (!raw || typeof raw !== "object") continue;
+        const item = raw as Partial<PostedPair>;
         const tweetUrl = typeof item.tweetUrl === "string" ? item.tweetUrl.trim() : "";
         const burnSignature = typeof item.burnSignature === "string" ? item.burnSignature.trim() : "";
         const paidAt = typeof item.paidAt === "string" ? item.paidAt.trim() : "";
@@ -167,23 +141,11 @@ export async function loadBoard(): Promise<PublicBoard> {
 
 export async function postPaidTweet(invoiceId: string): Promise<PostTweetResponse> {
   try {
-    const { status, raw, body } = await readResponse("/api/post", {
+    return await parseJson<PostTweetResponse>("/api/post", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ invoiceId }),
     });
-    const rec = asRecord(body);
-    if (rec && rec.ok === true && typeof rec.tweetId === "string" && typeof rec.tweetUrl === "string") {
-      return { ok: true, tweetId: rec.tweetId, tweetUrl: rec.tweetUrl };
-    }
-    const error = rec
-      ? String(rec.error ?? rec.errorMessage ?? "").trim()
-      : "";
-    return {
-      ok: false,
-      error: error || errorMessage(status, body, raw),
-      retry: rec?.retry === true || status >= 500,
-    };
   } catch {
     return {
       ok: false,
