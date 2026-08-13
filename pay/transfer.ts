@@ -7,6 +7,7 @@ import {
   TokenInvalidAccountOwnerError,
 } from "@solana/spl-token";
 import { PublicKey, Transaction, type Connection } from "@solana/web3.js";
+import { formatTokenAmount } from "./invoice";
 import { tokensToRaw } from "./mint";
 import type { Invoice, MintMeta } from "./types";
 
@@ -27,7 +28,9 @@ export async function buildExactTokenTransfer(input: {
   try {
     const account = await getAccount(input.connection, fromAta, "confirmed", programId);
     if (account.amount < amountRaw) {
-      throw new Error("Connected wallet does not hold 10,000 tokens of this mint.");
+      throw new Error(
+        `Connected wallet does not hold ${formatTokenAmount(input.invoice.amountTokens)} tokens of this mint.`,
+      );
     }
   } catch (err) {
     if (err instanceof TokenAccountNotFoundError || err instanceof TokenInvalidAccountOwnerError) {

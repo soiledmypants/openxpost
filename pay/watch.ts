@@ -82,7 +82,7 @@ async function parsedTx(
 }
 
 /**
- * Observe-only: wait for the receive ATA to hold the inbound 10k (raw units
+ * Observe-only: wait for the receive ATA to hold the inbound 100k (raw units
  * from the mint's real decimals). Does not hold keys or submit a burn.
  */
 export async function findInboundTokens(

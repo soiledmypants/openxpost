@@ -6,6 +6,7 @@ import {
   fetchInvoiceStatus,
   findBurnSignature,
   findInboundTokens,
+  DEFAULT_TOKEN_AMOUNT,
   formatTokenAmount,
   invoiceIsExpired,
   remainingMs,
@@ -199,7 +200,7 @@ export function PayPanel(): JSX.Element {
     }
   }
 
-  const amount = formatTokenAmount(session?.invoice.amountTokens ?? 10_000);
+  const amount = formatTokenAmount(session?.invoice.amountTokens ?? DEFAULT_TOKEN_AMOUNT);
 
   if (!session) {
     return (

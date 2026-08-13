@@ -8,7 +8,7 @@ export type ChatMessage = {
 };
 
 export const GREETING =
-  "Draft the post. I check the rules. I do not post. Payment is 10,000 tokens, sent from your wallet to a fresh receive address, then burned. The tweet link comes back on this site, never in the tweet.";
+  "Draft the post. I check the rules. I do not post. Payment is 100,000 tokens, sent from your wallet to a fresh receive address, then burned. The tweet link comes back on this site, never in the tweet.";
 
 export function reviewDraft(draft: string): string {
   const hits = checkDraft(draft);
@@ -19,7 +19,7 @@ export function reviewDraft(draft: string): string {
     return hits.map((hit) => hit.message).join(" ");
   }
   const remaining = MAX_CHARS - draft.trim().length;
-  return `This can go up. ${remaining} characters left. Get a quote — 10,000 tokens, then burned. One post per payment.`;
+  return `This can go up. ${remaining} characters left. Get a quote — 100,000 tokens, then burned. One post per payment.`;
 }
 
 export function answer(question: string, draft: string): string {
@@ -28,7 +28,7 @@ export function answer(question: string, draft: string): string {
     return reviewDraft(draft);
   }
   if (/(how|what).*(pay|token|amount|invoice|burn)/.test(q) || q.includes("wallet")) {
-    return "Connect a wallet. Send exactly 10,000 tokens to the invoice receive address. We look up the mint decimals — do not assume 6 or 9. Those tokens are burned. Supply goes down.";
+    return "Connect a wallet. Send exactly 100,000 tokens to the invoice receive address. We look up the mint decimals — do not assume 6 or 9. Those tokens are burned. Supply goes down.";
   }
   if (/(for you|foryou|algorithm|boost)/.test(q)) {
     return "This is not a For You slot. You are not buying distribution. You are posting on the OpenXPost X account, @OpenXPost.";

@@ -132,7 +132,7 @@ export async function fetchInvoiceStatus(
 }
 
 /**
- * Create a 10,000-token invoice. receivePubkey comes from VITE_PAY_API when set.
+ * Create a 100,000-token invoice. receivePubkey comes from VITE_PAY_API when set.
  * With no live API: local/dev gets a labeled demo pubkey; production stays offline.
  * Never invents a funded treasury.
  */

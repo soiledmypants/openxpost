@@ -14,6 +14,7 @@ export function tokensToRaw(amountTokens: number, decimals: number): bigint {
   if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) {
     throw new Error("mint decimals out of range");
   }
+  // Test mint: 6 decimals → 100_000 whole tokens = 100_000_000_000 raw.
   return BigInt(amountTokens) * 10n ** BigInt(decimals);
 }
 
