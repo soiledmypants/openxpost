@@ -3,7 +3,7 @@ import { apiPlugin } from "./vite.api";
 import { sourceCatalogPlugin } from "./vite.source";
 
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [sourceCatalogPlugin(), apiPlugin()],
   define: {
     global: "globalThis",

@@ -9,19 +9,26 @@
       content="Pay 100,000 $POST to post on the OpenXPost X account. Not a For You slot."
     />
     <title>OpenXPost</title>
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./src/styles.css" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\/+$/, "") || "/";
+        if (path === "/post") document.documentElement.classList.add("route-posts");
+      })();
+    </script>
   </head>
   <body>
     <a class="skip" href="#post">Skip to post</a>
     <header class="site-header">
-      <a class="wordmark" href="#top">
+      <div class="header-row">
+      <a class="wordmark" href="/">
         <svg class="mark" width="28" height="28" viewBox="0 0 32 32" style="width:28px;height:28px;max-width:28px;flex:none" aria-hidden="true">
           <rect width="32" height="32" rx="8" fill="#000" />
           <rect width="32" height="32" rx="8" fill="none" stroke="rgba(255,255,255,0.2)" />
@@ -36,14 +43,19 @@
         OpenXPost
       </a>
       <nav class="nav" aria-label="Primary">
-        <a href="#how">How it works</a>
-        <a href="#rules">Rules</a>
-        <a href="#post">Post</a>
-        <a href="#posts">Posts</a>
-        <a href="#docs">Docs</a>
+        <a href="/#how">How it works</a>
+        <a href="/#rules">Rules</a>
+        <a href="/#post">Post</a>
+        <a href="/post/">Posts</a>
+        <a href="/#docs">Docs</a>
       </nav>
       <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
-      <a class="btn btn-primary" href="#post">Post for 100,000 $POST</a>
+      <a class="btn btn-primary" href="/#post">Post for 100,000 $POST</a>
+      </div>
+      <p class="pin-bar">
+        All official posts from the team will be in the thread of the
+        <a href="https://x.com/OpenXPost">pinned tweet</a>.
+      </p>
     </header>
 
     <main id="top">
@@ -52,11 +64,16 @@
         <h1>100,000.<br />One <span class="grad">post</span>.<br />On our account.</h1>
         <p class="lede">
           X open-sourced For You. This is not a For You slot. It is an open microphone on the
-          OpenXPost X account. Pay 100,000 $POST. We post. See it in Posts.
+          OpenXPost X account. Pay 100,000 $POST. We post.
+          <a href="/post/">See it in Posts</a>.
+        </p>
+        <p class="lede pin-copy">
+          All official posts from the team will be in the thread of the
+          <a href="https://x.com/OpenXPost">pinned tweet</a>.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#post">Post for 100,000 $POST</a>
-          <a class="btn btn-secondary" href="#how">How it works</a>
+          <a class="btn btn-primary" href="/#post">Post for 100,000 $POST</a>
+          <a class="btn btn-secondary" href="/#how">How it works</a>
         </div>
       </section>
 
@@ -70,7 +87,7 @@
             <div class="mock">
               <p class="eyebrow">Draft</p>
               <p class="mock-amount compact">gm. shipping in public.</p>
-              <p class="mock-status">280 characters. No URLs, other tickers, CAs, wallets, or shills.</p>
+              <p class="mock-status">280 characters. No URLs, other tickers, CAs, wallets, shills, or abuse.</p>
             </div>
           </article>
           <article class="card">
@@ -88,7 +105,8 @@
           <article class="card">
             <h3>Post</h3>
             <p class="card-copy">
-              We post on @OpenXPost. See it in Posts: text, tweet link, and payment tx.
+              We post on @OpenXPost. See it in
+              <a href="/post/">Posts</a>: text, tweet link, and payment tx.
             </p>
             <div class="mock">
               <p class="eyebrow">Posts</p>
@@ -124,6 +142,10 @@
             No links in the tweet. The status URL comes back here.
           </li>
           <li>
+            <strong>No abuse</strong>
+            No rugs, honeypots, or attacks on the coin or dev.
+          </li>
+          <li>
             <strong>Treasury</strong>
             Pay 100,000 $POST to the treasury. One post per payment.
           </li>
@@ -144,7 +166,7 @@
               id="draft"
               maxlength="280"
               rows="6"
-              placeholder="280 characters. No URLs, other tickers, CAs, wallets, or shills."
+              placeholder="280 characters. No URLs, other tickers, CAs, wallets, shills, or abuse."
             ></textarea>
             <div class="row-actions">
               <button class="btn btn-secondary" id="connect-wallet" type="button">Connect</button>
@@ -162,10 +184,14 @@
         <div class="docs-head">
           <div>
             <p class="eyebrow">Posts</p>
-            <h2>On @OpenXPost</h2>
+            <h1 class="posts-title">On <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a></h1>
           </div>
           <p id="posts-count" class="muted"></p>
         </div>
+        <p class="pin-copy">
+          All official posts from the team will be in the thread of the
+          <a href="https://x.com/OpenXPost">pinned tweet</a>.
+        </p>
         <div id="posts-list" class="posts-list"></div>
       </section>
 
@@ -187,12 +213,19 @@
     </main>
 
     <footer class="site-footer">
-      <p>
-        <strong>OpenXPost</strong>
-        is not a For You product.
-        <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
-        You pay 100,000 $POST. We post. See it in Posts.
-      </p>
+      <div class="footer-copy">
+        <p>
+          <strong>OpenXPost</strong>
+          is not a For You product.
+          <a class="x-handle" href="https://x.com/OpenXPost">@OpenXPost</a>
+          You pay 100,000 $POST. We post.
+          <a href="/post/">See it in Posts</a>.
+        </p>
+        <p class="pin-copy">
+          All official posts from the team will be in the thread of the
+          <a href="https://x.com/OpenXPost">pinned tweet</a>.
+        </p>
+      </div>
       <div class="ca-slot">
         <span class="eyebrow">CA</span>
         <code id="ca-mint"></code>

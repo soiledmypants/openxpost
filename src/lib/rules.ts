@@ -1,4 +1,4 @@
-export type RuleId = "empty" | "length" | "url" | "ca" | "wallet" | "coin" | "shill";
+export type RuleId = "empty" | "length" | "url" | "ca" | "wallet" | "coin" | "shill" | "abuse";
 
 export type RuleHit = {
   id: RuleId;
@@ -14,6 +14,9 @@ const WALLET_RE =
   /\b(wallet|airdrop|seed phrase|private key|send (sol|eth|btc) to|my address)\b/i;
 const SHILL_RE =
   /\b(shill|100x|1000x|guaranteed|buy now|contract address|\bca:)\b/i;
+/** Whole-word / clear phrases only. Does not match the word "gay" alone. */
+const ABUSE_RE =
+  /\b(?:rugpulls?|rugged|rug\s+pulls?|rugs?|honeypots?|faggots?|retarded|retards?|niggers?|niggas?|trann(?:y|ies)|(?:(?:the|this|that)\s+)?dev(?:eloper)?s?(?:['\u2019]s|\s+is|\s+are)\s+gay)\b/i;
 
 export const MAX_CHARS = 280;
 
@@ -58,6 +61,10 @@ export function checkDraft(text: string): RuleHit[] {
 
   if (SHILL_RE.test(trimmed)) {
     hits.push({ id: "shill", message: "No shills." });
+  }
+
+  if (ABUSE_RE.test(trimmed)) {
+    hits.push({ id: "abuse", message: "No abuse." });
   }
 
   return hits;
