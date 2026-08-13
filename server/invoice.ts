@@ -89,7 +89,7 @@ export async function publicBoard(): Promise<PublicBoard> {
     invoices = [];
   }
   const posted = invoices
-    .filter((row) => Boolean(row.tweetUrl && row.txSig && row.paidAt))
+    .filter((row) => Boolean(row.tweetUrl && row.txSig && row.postText && row.paidAt))
     .sort((a, b) => (b.paidAt ?? "").localeCompare(a.paidAt ?? "") || b.createdAt - a.createdAt)
     .map((row) => ({
       invoiceId: row.invoiceId,
@@ -98,7 +98,7 @@ export async function publicBoard(): Promise<PublicBoard> {
       txSig: row.txSig ?? "",
       paidAt: row.paidAt ?? "",
     }))
-    .filter((row) => row.tweetUrl && row.txSig);
+    .filter((row) => row.tweetUrl && row.txSig && row.tweetText);
   return {
     receivePubkey: receivePubkey(),
     mint: tokenMint(),

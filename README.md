@@ -10,7 +10,7 @@ Connect a wallet. `createInvoice({ orderId, postText, postTextHash, fromPubkey }
 
 Payment token is $POST. Default mint: `CniGxmdBgiPivEYyY3eLJYTLsU3agGXVY6T23wncpump` (`VITE_TOKEN_MINT`). Receive: `8MSPPTBff7jamWFQHQUjTMmt24Yv9LdWBpm3sizjziup`. Do not commit secrets. Do not store a private key.
 
-POST `/api/invoice` and POST `/api/post` do not load `@solana/web3.js`. Wallet adapter and the transfer are client-side. A client `txSig` is paid. On-chain match lives in a separate Netlify function if needed.
+POST `/api/invoice` and POST `/api/post` do not load `@solana/web3.js`. Wallet adapter and the transfer are client-side. A client `txSig` is paid. Matching is the exact 100,000 $POST transfer from the connected pubkey to the treasury. Do not wait for a burn. On-chain match lives in a separate Netlify function if needed.
 
 ## Site
 

@@ -22,17 +22,6 @@ function displayUrl(url: string): string {
   return url.replace(/^https:\/\//, "");
 }
 
-function formatTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 function shortenSig(sig: string): string {
   if (sig.length <= 16) return sig;
   return `${sig.slice(0, 8)}…${sig.slice(-8)}`;
@@ -203,12 +192,6 @@ export function mountPostPanel(): void {
       links.append(linkEl(item.tweetUrl, displayUrl(item.tweetUrl)));
       const txHref = solscanTxUrl(item.txSig);
       links.append(linkEl(txHref, shortenSig(item.txSig)));
-      if (item.paidAt) {
-        const time = document.createElement("time");
-        time.dateTime = item.paidAt;
-        time.textContent = formatTime(item.paidAt);
-        links.append(time);
-      }
       row.append(links);
       postsList.append(row);
     }

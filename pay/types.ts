@@ -33,7 +33,7 @@ export type InvoiceCreated = {
   fromPubkey: string;
 };
 
-/** Locked invoice.paid fields. Reader must accept aliases. No burnSignature. */
+/** Locked invoice.paid fields. Reader must accept aliases. Paid = the 100,000 $POST pay tx. */
 export type InvoicePaid = {
   type: "invoice.paid";
   invoiceId: string;

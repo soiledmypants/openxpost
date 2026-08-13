@@ -16,8 +16,6 @@ export type StoredInvoice = {
   createdAt: number;
   txSig?: string;
   payer?: string;
-  /** @deprecated Per-pay burns are not used. Kept so old records still load. */
-  burnSignature?: string;
   slot?: number;
   paidAt?: string;
   tweetId?: string;
