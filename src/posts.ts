@@ -10,14 +10,25 @@ function shortenSig(sig: string): string {
   return `${sig.slice(0, 8)}…${sig.slice(-8)}`;
 }
 
-function linkEl(href: string, label: string): HTMLAnchorElement {
+function linkEl(href: string, label: string, title?: string): HTMLAnchorElement {
   const link = document.createElement("a");
   link.className = "pair-link";
   link.href = href;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = label;
+  if (title) link.title = title;
   return link;
+}
+
+function proofLink(kind: string, href: string, label: string, title?: string): HTMLElement {
+  const wrap = document.createElement("span");
+  wrap.className = "posts-proof";
+  const tag = document.createElement("span");
+  tag.className = "posts-proof-k";
+  tag.textContent = kind;
+  wrap.append(tag, linkEl(href, label, title));
+  return wrap;
 }
 
 export function renderPostedRows(
@@ -32,7 +43,11 @@ export function renderPostedRows(
   if (posted.length === 0) {
     const empty = document.createElement("p");
     empty.className = "muted";
-    empty.textContent = "No posts yet. Use $POST to post anything on this X page.";
+    empty.append("No posts yet. ");
+    const write = document.createElement("a");
+    write.href = "/#post";
+    write.textContent = "Write a post";
+    empty.append(write, ".");
     list.append(empty);
     return;
   }
@@ -47,9 +62,9 @@ export function renderPostedRows(
 
     const links = document.createElement("div");
     links.className = "posts-meta";
-    links.append(linkEl(item.tweetUrl, displayUrl(item.tweetUrl)));
+    links.append(proofLink("X", item.tweetUrl, displayUrl(item.tweetUrl), item.tweetUrl));
     const txHref = solscanTxUrl(item.txSig);
-    links.append(linkEl(txHref, shortenSig(item.txSig)));
+    links.append(proofLink("tx", txHref, `solscan.io/tx/${shortenSig(item.txSig)}`, item.txSig));
     row.append(links);
     list.append(row);
   }

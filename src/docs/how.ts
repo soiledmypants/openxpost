@@ -6,7 +6,7 @@ const PRICE = DEFAULT_AMOUNT_TOKENS.toLocaleString("en-US");
 export const HOW_TITLE = "How this is possible";
 
 export const HOW_LEDE =
-  `X open-sourced For You. This account is open too. Zero limits. Use ${TOKEN_TICKER} to post on this X page: links, contract addresses, other coins, ads, slurs, whatever you want. Freedom of speech. Open mic. Powered by Grok. See it in Posts. All official posts from the team will be in the thread of the pinned tweet.`;
+  `X open-sourced For You. This account is open too. Zero limits. Use ${TOKEN_TICKER} to post on this X page: links, contract addresses, other coins, ads, slurs, whatever you want. Freedom of speech. Open mic. Powered by Grok. See posts. All official posts from the team will be in the thread of the pinned tweet.`;
 
 export type HowSection = {
   title: string;
@@ -38,7 +38,7 @@ export const HOW_SECTIONS: HowSection[] = [
     title: "Post on X",
     paragraphs: [
       "After paid, the server posts with the official X API: POST /2/tweets, body { \"text\": \"...\" } only, using the draft as given — URLs included. OAuth 2.0 user context for @OpenXPost. No tokens in the browser.",
-      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id} on the Posts page (/post/), with the 100,000 $POST transfer signature. It is never written into the tweet. If X fails after payment, retry the tweet. Do not pay again.",
+      "The status URL is returned on this site as https://x.com/OpenXPost/status/{id} on the Post page (/post/), with the 100,000 $POST transfer signature. It is never written into the tweet. If X fails after payment, retry the tweet. Do not pay again.",
     ],
   },
   {

@@ -2,7 +2,7 @@
 
 X open-sourced For You. This account is open too. Zero limits. Use $POST to post on this X page: links, contract addresses, other coins, ads, slurs, whatever you want. Freedom of speech. Open mic. Powered by Grok.
 
-Connect Phantom or Solflare, write a draft, and transfer exactly 100,000 $POST from that wallet to the treasury. We post. See it in Posts: tweet text, tweet link, and the 100,000 $POST transfer signature. [@OpenXPost](https://x.com/OpenXPost).
+Connect Phantom or Solflare, write a draft, and transfer exactly 100,000 $POST from that wallet to the treasury. We post. See it on Post (`/post/`): tweet text, tweet link, and the 100,000 $POST transfer signature. [@OpenXPost](https://x.com/OpenXPost).
 
 ## Pay
 
@@ -14,7 +14,7 @@ POST `/api/invoice` and POST `/api/post` do not load `@solana/web3.js`. Wallet a
 
 ## Site
 
-The Docs tab on the site is this source, bundled at build time. Posts is a page at `/post/`: each paid tweet with its X status link and Solscan payment signature, newest first. Write anything. The draft must be non-empty and within 280 characters. There is no chat. All official posts from the team will be in the thread of the pinned tweet.
+The Docs tab on the site is this source, bundled at build time. Post is a page at `/post/`: each paid tweet with its X status link and Solscan payment signature, newest first. Compose stays on the home write panel (`/#post`). Write anything. The draft must be non-empty and within 280 characters. There is no chat. All official posts from the team will be in the thread of the pinned tweet.
 
 Netlify builds with `npm run build` and publishes `dist` (`netlify.toml`). After `invoice.paid`, a Netlify function POSTs `https://api.x.com/2/tweets` as @OpenXPost with the draft text as given, including URLs. Public env (client + server, same values): `VITE_TOKEN_MINT` / `TOKEN_MINT`, `VITE_TOKEN_AMOUNT` / `TOKEN_AMOUNT`, `VITE_TREASURY_ADDRESS` / `TREASURY_ADDRESS`. Server env only: `HELIUS_API_KEY` (or `HELIUS_RPC_URL` if it is already a full URL), `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_ACCESS_TOKEN`, `X_REFRESH_TOKEN`. Never in the client. Do not put a Helius key in `VITE_SOLANA_RPC` or any `VITE_` variable — visitors can read those. Browser wallet RPC goes to `POST /api/rpc` on this origin (Netlify function → Helius). Status URL on this site — never in the tweet.
 
