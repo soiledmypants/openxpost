@@ -1,3 +1,4 @@
+import { getStore as getBlobStore } from "@netlify/blobs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
@@ -40,8 +41,11 @@ export type Store = {
   putOauth(record: OauthRecord): Promise<void>;
 };
 
-const FILE = join(process.cwd(), ".data", "openxpost.json");
+function storeFile(): string {
+  return process.env.OPENXPOST_STORE_FILE || join(process.cwd(), ".data", "openxpost.json");
+}
 const INDEX_KEY = "inv-index";
+const STORE_NAME = "openxpost";
 
 type FileShape = {
   invoices?: Record<string, StoredInvoice>;
@@ -56,7 +60,7 @@ function persistable(record: StoredInvoice): StoredInvoice {
 
 async function readFileStore(): Promise<FileShape> {
   try {
-    const raw = await readFile(FILE, "utf8");
+    const raw = await readFile(storeFile(), "utf8");
     return JSON.parse(raw) as FileShape;
   } catch {
     return {};
@@ -64,8 +68,9 @@ async function readFileStore(): Promise<FileShape> {
 }
 
 async function writeFileStore(data: FileShape): Promise<void> {
-  await mkdir(dirname(FILE), { recursive: true });
-  await writeFile(FILE, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  const file = storeFile();
+  await mkdir(dirname(file), { recursive: true });
+  await writeFile(file, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 }
 
 function fileStore(): Store {
@@ -104,7 +109,10 @@ function fileStore(): Store {
 }
 
 type BlobRaw = {
-  get: (key: string, opts: { type: "json" }) => Promise<unknown>;
+  get: (
+    key: string,
+    opts: { type: "json"; consistency?: "strong" | "eventual" },
+  ) => Promise<unknown>;
   setJSON: (key: string, value: unknown) => Promise<unknown>;
   delete?: (key: string) => Promise<unknown>;
   list?: (opts?: { prefix?: string }) => Promise<{ blobs?: { key: string }[] }>;
@@ -117,20 +125,25 @@ function asIdList(value: unknown): string[] {
 
 function blobStore(raw: BlobRaw): Store {
   async function readIndex(): Promise<string[]> {
-    return asIdList(await raw.get(INDEX_KEY, { type: "json" }));
+    return asIdList(await raw.get(INDEX_KEY, { type: "json", consistency: "strong" }));
+  }
+
+  async function listedFromBlobs(): Promise<string[]> {
+    if (typeof raw.list !== "function") return [];
+    const result = await raw.list({ prefix: "inv:" });
+    const ids: string[] = [];
+    for (const blob of result.blobs ?? []) {
+      if (blob.key.startsWith("inv:")) ids.push(blob.key.slice(4));
+    }
+    return ids;
   }
 
   async function listedIds(): Promise<string[]> {
     const ids = new Set<string>(await readIndex());
-    if (typeof raw.list === "function") {
-      try {
-        const result = await raw.list({ prefix: "inv:" });
-        for (const blob of result.blobs ?? []) {
-          if (blob.key.startsWith("inv:")) ids.add(blob.key.slice(4));
-        }
-      } catch {
-        // Index is enough when list is unavailable.
-      }
+    try {
+      for (const id of await listedFromBlobs()) ids.add(id);
+    } catch (error) {
+      if (ids.size === 0) throw error;
     }
     return [...ids];
   }
@@ -145,7 +158,11 @@ function blobStore(raw: BlobRaw): Store {
       }
     },
     async getInvoice(invoiceId) {
-      return ((await raw.get(`inv:${invoiceId}`, { type: "json" })) as StoredInvoice | null) ?? null;
+      return (
+        ((await raw.get(`inv:${invoiceId}`, { type: "json", consistency: "strong" })) as
+          | StoredInvoice
+          | null) ?? null
+      );
     },
     async deleteInvoice(invoiceId) {
       if (typeof raw.delete === "function") {
@@ -161,13 +178,17 @@ function blobStore(raw: BlobRaw): Store {
       const ids = await listedIds();
       const records = await Promise.all(
         ids.map(async (id) => {
-          return ((await raw.get(`inv:${id}`, { type: "json" })) as StoredInvoice | null) ?? null;
+          return (
+            ((await raw.get(`inv:${id}`, { type: "json", consistency: "strong" })) as
+              | StoredInvoice
+              | null) ?? null
+          );
         }),
       );
       return records.filter((record): record is StoredInvoice => record !== null);
     },
     async getOauth() {
-      return ((await raw.get("oauth:x", { type: "json" })) as OauthRecord | null) ?? null;
+      return ((await raw.get("oauth:x", { type: "json", consistency: "strong" })) as OauthRecord | null) ?? null;
     },
     async putOauth(record) {
       await raw.setJSON("oauth:x", record);
@@ -175,15 +196,38 @@ function blobStore(raw: BlobRaw): Store {
   };
 }
 
+/** File fallback is local/dev only. Deployed Netlify functions must use Blobs. */
+export function allowFileFallback(): boolean {
+  if (process.env.NETLIFY_DEV === "true") return true;
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) return false;
+  const context = process.env.CONTEXT;
+  if (context === "production" || context === "deploy-preview" || context === "branch-deploy") {
+    return false;
+  }
+  return true;
+}
+
+function openBlobStore(): Store {
+  const raw = getBlobStore({ name: STORE_NAME, consistency: "strong" });
+  return blobStore(raw);
+}
+
 let cached: Store | undefined;
+
+export function resetStoreCache(): void {
+  cached = undefined;
+}
 
 export async function getStore(): Promise<Store> {
   if (cached) return cached;
   try {
-    const mod = await import("@netlify/blobs");
-    cached = blobStore(mod.getStore("openxpost"));
+    cached = openBlobStore();
     return cached;
-  } catch {
+  } catch (error) {
+    if (!allowFileFallback()) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Netlify Blobs is required for invoices in production (${STORE_NAME}). ${detail}`);
+    }
     cached = fileStore();
     return cached;
   }

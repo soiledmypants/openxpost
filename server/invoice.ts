@@ -4,6 +4,7 @@ import { statusUrl } from "../pay/types";
 import { checkDraft } from "../src/lib/rules";
 import { amountRaw, amountTokens as baseAmountTokens, receivePubkey, tokenMint } from "./env";
 import { isHiddenTestPost } from "./hidden-test-posts";
+import { restorePublishedBoard } from "./restore-board";
 import { getStore, type StoredInvoice } from "./store";
 
 /** Create/store only. Do not import onchain, web3, spl-token, or wallet adapters. */
@@ -70,11 +71,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<InvoiceC
     amountRaw: amountRaw(),
     createdAt: Date.now(),
   };
-  try {
-    await (await getStore()).putInvoice(record);
-  } catch {
-    // Quote even if blob/file store is unavailable.
-  }
+  await (await getStore()).putInvoice(record);
   return publicInvoice(record);
 }
 
@@ -83,12 +80,8 @@ export async function loadInvoice(invoiceId: string): Promise<StoredInvoice | nu
 }
 
 export async function publicBoard(): Promise<PublicBoard> {
-  let invoices: StoredInvoice[] = [];
-  try {
-    invoices = await (await getStore()).listInvoices();
-  } catch {
-    invoices = [];
-  }
+  await restorePublishedBoard();
+  const invoices = await (await getStore()).listInvoices();
   const posted = invoices
     .filter((row) => !isHiddenTestPost(row.invoiceId, row.tweetId ?? ""))
     .filter((row) => Boolean(row.txSig && row.postText && row.paidAt && (row.tweetUrl || row.tweetId)))
@@ -106,11 +99,17 @@ export async function publicBoard(): Promise<PublicBoard> {
       };
     })
     .filter((row) => row.tweetUrl && row.txSig && row.tweetText);
+  const seen = new Set<string>();
+  const unique = posted.filter((row) => {
+    if (seen.has(row.tweetId)) return false;
+    seen.add(row.tweetId);
+    return true;
+  });
   return {
     receivePubkey: receivePubkey(),
     mint: tokenMint(),
     amountTokens: baseAmountTokens(),
-    posted,
+    posted: unique,
   };
 }
 
