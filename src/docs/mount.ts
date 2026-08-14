@@ -185,7 +185,7 @@ export function mountDocs(): void {
     document.documentElement.classList.toggle("route-posts", isPosts);
     document.body.classList.toggle("is-docs", isDocs);
     document.body.classList.toggle("is-posts", isPosts);
-    document.title = isDocs ? "Docs · OpenXPost" : isPosts ? "Posts · OpenXPost" : "OpenXPost";
+    document.title = isDocs ? "Docs · OpenXPost" : isPosts ? "Post · OpenXPost" : "OpenXPost";
     syncNavCurrent(parsed.view);
     const skip = document.querySelector<HTMLAnchorElement>("a.skip");
     if (skip) skip.href = isPosts ? "#posts" : "#post";
