@@ -142,7 +142,7 @@ export function mountPostPanel(): void {
       meta.append("Posted. ");
       const postsLink = document.createElement("a");
       postsLink.href = "/post/";
-      postsLink.textContent = "See the post.";
+      postsLink.textContent = "See Posts.";
       meta.append(postsLink);
     } else if (phase === "posting") meta.textContent = "Paid. Posting.";
     else if (phase === "signing") meta.textContent = "Sign in your wallet.";
