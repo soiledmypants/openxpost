@@ -82,22 +82,22 @@ async function restoreRecord(seed: RestoreSeed): Promise<StoredInvoice> {
   };
 }
 
-async function upsertRestoreRecord(record: StoredInvoice): Promise<void> {
-  const store = await getStore();
-  const existing = await store.getInvoice(record.invoiceId);
-  if (existing) return;
-  await store.putInvoice(record);
-}
-
 let seeded: Promise<void> | undefined;
 
 /** Idempotent putInvoice of already-published posts. Does not call X. */
 export async function restorePublishedBoard(): Promise<void> {
   if (!seeded) {
     seeded = (async () => {
+      const store = await getStore();
+      const listed = await store.listInvoices();
+      const haveId = new Set(listed.map((row) => row.invoiceId));
+      const haveTweet = new Set(listed.map((row) => row.tweetId).filter((id): id is string => Boolean(id)));
       const records = await Promise.all(RESTORE_SEEDS.map(restoreRecord));
       for (const record of records) {
-        await upsertRestoreRecord(record);
+        if (haveId.has(record.invoiceId) || (record.tweetId && haveTweet.has(record.tweetId))) continue;
+        await store.putInvoice(record);
+        haveId.add(record.invoiceId);
+        if (record.tweetId) haveTweet.add(record.tweetId);
       }
     })().catch((error: unknown) => {
       seeded = undefined;

@@ -99,11 +99,17 @@ export async function publicBoard(): Promise<PublicBoard> {
       };
     })
     .filter((row) => row.tweetUrl && row.txSig && row.tweetText);
+  const seen = new Set<string>();
+  const unique = posted.filter((row) => {
+    if (seen.has(row.tweetId)) return false;
+    seen.add(row.tweetId);
+    return true;
+  });
   return {
     receivePubkey: receivePubkey(),
     mint: tokenMint(),
     amountTokens: baseAmountTokens(),
-    posted,
+    posted: unique,
   };
 }
 

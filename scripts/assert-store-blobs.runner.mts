@@ -18,14 +18,14 @@ function assert(cond: unknown, message: string): asserts cond {
   if (!cond) throw new Error(message);
 }
 
-const prevCwd = process.cwd();
 const prevLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
 const prevContext = process.env.CONTEXT;
 const prevDev = process.env.NETLIFY_DEV;
+const prevStore = process.env.OPENXPOST_STORE_FILE;
 const work = await mkdtemp(join(tmpdir(), "openxpost-store-"));
 
 try {
-  process.chdir(work);
+  process.env.OPENXPOST_STORE_FILE = join(work, "openxpost.json");
   delete process.env.AWS_LAMBDA_FUNCTION_NAME;
   delete process.env.CONTEXT;
   delete process.env.NETLIFY_DEV;
@@ -77,10 +77,30 @@ try {
   const again = await store.getInvoice(restoreInvoiceId(tweetIds[0] ?? ""));
   assert(again?.postText === "mutated", "restore must leave an existing invoiceId alone");
 
+  const duplicate: typeof first = {
+    ...first,
+    invoiceId: "uuid-already-in-blobs",
+    orderId: "uuid-already-in-blobs",
+    postText: first.postText,
+    paidAt: "2026-08-14T03:35:02.938Z",
+  };
+  await store.putInvoice(duplicate);
+  resetRestoreCache();
+  await restorePublishedBoard();
+  const listedAfter = await store.listInvoices();
+  assert(
+    listedAfter.filter((row) => row.tweetId === tweetIds[0]).length === 2,
+    "existing tweetId must not get a third restore row",
+  );
+
   const board = await publicBoard();
-  assert(board.posted.length === 6, `publicBoard should list 6 restored posts, got ${board.posted.length}`);
+  assert(board.posted.length === 6, `publicBoard should list 6 unique posts, got ${board.posted.length}`);
   assert(board.posted[0]?.tweetId === tweetIds[0], "publicBoard must sort newest first");
   assert(board.posted[5]?.tweetId === tweetIds[5], "publicBoard oldest restored row is last");
+  assert(
+    new Set(board.posted.map((row) => row.tweetId)).size === 6,
+    "publicBoard must dedupe the same tweetId",
+  );
   for (const row of board.posted) {
     assert(row.tweetText && row.tweetUrl && row.txSig, "each board row needs tweetText, tweetUrl, txSig");
   }
@@ -90,13 +110,14 @@ try {
 
   console.log("store blobs + restore board ok");
 } finally {
-  process.chdir(prevCwd);
   if (prevLambda === undefined) delete process.env.AWS_LAMBDA_FUNCTION_NAME;
   else process.env.AWS_LAMBDA_FUNCTION_NAME = prevLambda;
   if (prevContext === undefined) delete process.env.CONTEXT;
   else process.env.CONTEXT = prevContext;
   if (prevDev === undefined) delete process.env.NETLIFY_DEV;
   else process.env.NETLIFY_DEV = prevDev;
+  if (prevStore === undefined) delete process.env.OPENXPOST_STORE_FILE;
+  else process.env.OPENXPOST_STORE_FILE = prevStore;
   resetStoreCache();
   resetRestoreCache();
   await rm(work, { recursive: true, force: true });

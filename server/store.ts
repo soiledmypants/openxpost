@@ -41,7 +41,9 @@ export type Store = {
   putOauth(record: OauthRecord): Promise<void>;
 };
 
-const FILE = join(process.cwd(), ".data", "openxpost.json");
+function storeFile(): string {
+  return process.env.OPENXPOST_STORE_FILE || join(process.cwd(), ".data", "openxpost.json");
+}
 const INDEX_KEY = "inv-index";
 const STORE_NAME = "openxpost";
 
@@ -58,7 +60,7 @@ function persistable(record: StoredInvoice): StoredInvoice {
 
 async function readFileStore(): Promise<FileShape> {
   try {
-    const raw = await readFile(FILE, "utf8");
+    const raw = await readFile(storeFile(), "utf8");
     return JSON.parse(raw) as FileShape;
   } catch {
     return {};
@@ -66,8 +68,9 @@ async function readFileStore(): Promise<FileShape> {
 }
 
 async function writeFileStore(data: FileShape): Promise<void> {
-  await mkdir(dirname(FILE), { recursive: true });
-  await writeFile(FILE, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  const file = storeFile();
+  await mkdir(dirname(file), { recursive: true });
+  await writeFile(file, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 }
 
 function fileStore(): Store {
