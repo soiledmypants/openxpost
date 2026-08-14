@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/assert-invoice-isolates.mjs && node scripts/assert-post-isolates.mjs && node scripts/assert-draft-rules.mjs && node scripts/assert-silent-reject.mjs && tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build",
+    "build": "node scripts/assert-invoice-isolates.mjs && node scripts/assert-post-isolates.mjs && node scripts/assert-draft-rules.mjs && node scripts/assert-silent-reject.mjs && node scripts/assert-store-blobs.mjs && tsc --noEmit && tsc --noEmit -p tsconfig.server.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && node scripts/assert-invoice-isolates.mjs && node scripts/assert-post-isolates.mjs && node scripts/assert-draft-rules.mjs && node scripts/assert-silent-reject.mjs",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.server.json && node scripts/assert-invoice-isolates.mjs && node scripts/assert-post-isolates.mjs && node scripts/assert-draft-rules.mjs && node scripts/assert-silent-reject.mjs && node scripts/assert-store-blobs.mjs",
     "assert-post": "node scripts/assert-post-isolates.mjs"
   },
   "devDependencies": {

@@ -48,7 +48,13 @@ while (queue.length > 0) {
   }
 }
 
-const required = ["server/invoice.ts", "server/invoice-http.ts", "server/store.ts", "pay/amount.ts"];
+const required = [
+  "server/invoice.ts",
+  "server/invoice-http.ts",
+  "server/store.ts",
+  "server/restore-board.ts",
+  "pay/amount.ts",
+];
 for (const file of required) {
   if (!seen.has(file)) {
     throw new Error(`invoice isolate graph missed ${file}`);
