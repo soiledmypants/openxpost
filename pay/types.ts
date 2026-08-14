@@ -2,10 +2,9 @@ export const DEFAULT_SOLANA_RPC = "https://api.mainnet-beta.solana.com";
 
 /**
  * Payment mint. Quiet CA slot on the site AND the mint required for the
- * 100,000 $POST transfer / amountRaw match. Empty until a CA is set via
- * VITE_TOKEN_MINT / TOKEN_MINT (or this constant).
+ * 100,000 $POST transfer / amountRaw match. Override with VITE_TOKEN_MINT / TOKEN_MINT.
  */
-export const DEFAULT_TOKEN_MINT = "";
+export const DEFAULT_TOKEN_MINT = "AY4xWaMBaMS9fgzxuacLKrkP52mK4AvPjRxR5bbpump";
 
 /** Shown on the site. Payment token ticker. */
 export const TOKEN_TICKER = "$POST";
