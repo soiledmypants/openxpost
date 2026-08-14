@@ -56,7 +56,13 @@ for (const tweetId of tweetIds) {
 const runner = join(root, "scripts", "assert-store-blobs.runner.mts");
 const result = spawnSync(
   process.execPath,
-  ["--experimental-strip-types", "--no-warnings", runner],
+  [
+    "--import",
+    join(root, "scripts", "ts-relative-register.mjs"),
+    "--experimental-strip-types",
+    "--no-warnings",
+    runner,
+  ],
   { cwd: root, encoding: "utf8" },
 );
 
